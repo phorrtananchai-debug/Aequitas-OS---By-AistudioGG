@@ -136,8 +136,8 @@ export default function Sidebar({
     onTriggerAlert({
       type: 'monitoring',
       typeLabel: 'LEDGER RE-SYNCING',
-      title: 'Auditing Ledger Nodes...',
-      description: 'Requesting verified account balances from the consensus clusters.'
+      title: 'Auditing Parameters...',
+      description: 'Checking local cached files and syncing asset prices.'
     });
 
     setTimeout(() => {
@@ -146,7 +146,7 @@ export default function Sidebar({
         type: 'success',
         typeLabel: 'SYNC RESOLVED',
         title: 'Wealth Ledger Synced',
-        description: 'Synchronized with Aequitas nodes (sol-09, eth-03). Account parameters reconciled.'
+        description: 'Offline parameter values reconciled with currency conversions successfully.'
       });
     }, 1800);
   };
@@ -228,7 +228,7 @@ export default function Sidebar({
                             </div>
                             <div className="space-y-2">
                               <div>
-                                <span className="text-[9px] text-slate-400 uppercase font-bold block">Consensus balance</span>
+                                <span className="text-[9px] text-slate-400 uppercase font-bold block">Current balance</span>
                                 <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-50">${portfolioValue.toLocaleString()}</span>
                               </div>
                               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800/10 text-[11px] space-y-1 leading-normal font-sans">
@@ -238,10 +238,10 @@ export default function Sidebar({
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-slate-450">Event Payout</span>
-                                  <span className="font-bold text-indigo-600 dark:text-indigo-400">Pending Jun 1</span>
+                                  <span className="font-bold text-indigo-650 dark:text-indigo-400">Pending Jun 1</span>
                                 </div>
                               </div>
-                              <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-medium">✨ Solana RSI divergence indicator flagged</span>
+                              <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-medium">✨ Target ranges checked and compliant</span>
                             </div>
                           </div>
                         )}
@@ -285,11 +285,11 @@ export default function Sidebar({
                                 <span className="font-mono font-bold text-slate-900 dark:text-white">$3,150.00</span>
                               </div>
                               <div className="flex justify-between py-1 border-b border-slate-100/50 dark:border-slate-800/10">
-                                <span className="text-slate-450">Direct Target APY</span>
+                                <span className="text-slate-455">Direct Target APY</span>
                                 <span className="font-mono font-bold text-emerald-600">7.20% Core APY</span>
                               </div>
-                              <p className="text-[10px] text-slate-400 leading-normal mt-2">
-                                Upcoming payout: <strong className="text-slate-600 dark:text-slate-350">$420.00 SOL Stake</strong> scheduled for Jun 1 deposition.
+                              <p className="text-[10px] text-slate-400 leading-normal mt-2 font-sans">
+                                Upcoming payout: <strong className="text-slate-600 dark:text-slate-350">$420.00 SCHD Yield</strong> scheduled for Jun 1 deposition.
                               </p>
                             </div>
                           </div>
@@ -328,13 +328,13 @@ export default function Sidebar({
                               <Sparkles size={16} className="text-blue-600" />
                               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">System Intelligence Core</span>
                             </div>
-                            <div className="space-y-2.5">
+                            <div className="space-y-2.5 font-sans">
                               <div>
                                 <span className="text-[9px] text-slate-400 uppercase font-black block">Active Guidance Anchor</span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-1">Boundaries support detected at $145.00 limit.</span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-1">Rebalancing recommended above 3.5% drift.</span>
                               </div>
-                              <div className="p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-[10px] text-slate-450 font-medium">
-                                System Status: Consensus calibrated. No critical warning signals. Include regular DCA instructions.
+                              <div className="p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-[10px] text-slate-450 font-medium leading-normal">
+                                Operating Status: All standard parameters normalized. Core indexes mapped to your local DCA plan successfully.
                               </div>
                             </div>
                           </div>

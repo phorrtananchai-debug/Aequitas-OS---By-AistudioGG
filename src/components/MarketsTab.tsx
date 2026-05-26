@@ -1,294 +1,423 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  Search, 
-  TrendingUp, 
-  TrendingDown, 
-  ArrowUpRight, 
-  DollarSign, 
   Plus, 
-  Minus,
-  Coins,
-  History
+  Search, 
+  Layers, 
+  Globe, 
+  Calculator, 
+  Calendar, 
+  ArrowUpRight, 
+  Check, 
+  TrendingUp, 
+  Edit3, 
+  CheckCircle2,
+  RefreshCw,
+  Sliders,
+  AlertCircle
 } from 'lucide-react';
-import { AlertItem } from '../types';
+import { Holding, ThaiFundNavState, AlertItem } from '../types';
 
-interface MarketsProps {
+interface HoldingsTabProps {
   searchQuery: string;
-  onExecuteTrade: () => void;
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
+  holdings: Holding[];
+  onUpdateHoldings: (nextHoldings: Holding[]) => void;
+  thaiFundNavs: ThaiFundNavState[];
+  onUpdateThaiFundNavs: (nextNavs: ThaiFundNavState[]) => void;
 }
-
-interface AssetInfo {
-  ticker: string;
-  name: string;
-  price: number;
-  change: number;
-  volume: string;
-  cap: string;
-  trend: number[];
-  logo: string;
-}
-
-const INITIAL_ASSETS: AssetInfo[] = [
-  { ticker: 'SOL', name: 'Solana', price: 148.24, change: 5.2, volume: '$1.2B', cap: '$65.4B', trend: [135, 137, 134, 140, 144, 142, 146, 145, 148.24], logo: 'S' },
-  { ticker: 'BTC', name: 'Bitcoin', price: 68420.00, change: 2.4, volume: '$32.8B', cap: '$1.3T', trend: [67100, 67400, 67200, 67800, 68100, 68000, 68420], logo: 'B' },
-  { ticker: 'ETH', name: 'Ethereum', price: 3480.50, change: -1.2, volume: '$14.1B', cap: '$418.2B', trend: [3550, 3530, 3510, 3495, 3485, 3480.50], logo: 'E' },
-  { ticker: 'JUP', name: 'Jupiter', price: 1.15, change: 8.7, volume: '$210M', cap: '$1.5B', trend: [1.02, 1.05, 1.04, 1.08, 1.12, 1.15], logo: 'J' },
-  { ticker: 'PYTH', name: 'Pyth Network', price: 0.52, change: -3.8, volume: '$84M', cap: '$780M', trend: [0.55, 0.54, 0.53, 0.52], logo: 'P' },
-];
 
 export default function MarketsTab({
   searchQuery,
-  onExecuteTrade,
-  onTriggerAlert
-}: MarketsProps) {
-  const [assets, setAssets] = useState<AssetInfo[]>(INITIAL_ASSETS);
-  const [activeAsset, setActiveAsset] = useState<AssetInfo>(INITIAL_ASSETS[0]);
+  onTriggerAlert,
+  holdings,
+  onUpdateHoldings,
+  thaiFundNavs,
+  onUpdateThaiFundNavs
+}: HoldingsTabProps) {
+  const [filterType, setFilterType] = useState<string>('all');
+  const [editingId, setEditingId] = useState<string | null>(null);
   
-  // Simulated bids asks orders lists
-  const [orderBook, setOrderBook] = useState<{ price: number; amount: number; type: 'bid' | 'ask' }[]>([]);
+  // Inline edit state values
+  const [editUnits, setEditUnits] = useState<string>('');
+  const [editAvgCost, setEditAvgCost] = useState<string>('');
+  const [editPrice, setEditPrice] = useState<string>('');
+  const [editNotes, setEditNotes] = useState<string>('');
 
-  // Periodically fluctuate rates and update bids/asks order listings
-  useEffect(() => {
-    // Generate initial order details
-    const initialOrders: typeof orderBook = [];
-    for (let i = 0; i < 6; i++) {
-      initialOrders.push({
-        price: activeAsset.price + (Math.random() * activeAsset.price * 0.005),
-        amount: Math.random() * 50 + 2,
-        type: 'ask'
+  // Thai NAV bridge inputs state
+  const [updatingThaiTicker, setUpdatingThaiTicker] = useState<string | null>(null);
+  const [thaiNavInput, setThaiNavInput] = useState<string>('');
+
+  const handleStartEdit = (h: Holding) => {
+    setEditingId(h.id);
+    setEditUnits(h.units.toString());
+    setEditAvgCost(h.avgCost.toString());
+    setEditPrice(h.currentPrice.toString());
+    setEditNotes(h.notes || '');
+  };
+
+  const handleSaveEdit = (id: string) => {
+    const unitsVal = parseFloat(editUnits);
+    const avgCostVal = parseFloat(editAvgCost);
+    const currentPriceVal = parseFloat(editPrice);
+
+    if (isNaN(unitsVal) || isNaN(avgCostVal) || isNaN(currentPriceVal)) {
+      onTriggerAlert({
+        type: 'high',
+        typeLabel: 'VALIDATION ACTION',
+        title: 'Invalid Parameters',
+        description: 'Units, Average Cost, and Current NAV must be valid positive numeric coordinates.'
       });
-      initialOrders.push({
-        price: activeAsset.price - (Math.random() * activeAsset.price * 0.005),
-        amount: Math.random() * 50 + 2,
-        type: 'bid'
-      });
+      return;
     }
-    setOrderBook(initialOrders.sort((a, b) => b.price - a.price));
 
-    const priceInterval = setInterval(() => {
-      // fluctuation setup
-      setAssets(prev => prev.map(item => {
-        const drift = (Math.random() - 0.48) * 0.03;
-        const multiplier = item.price > 1000 ? 5 : item.price > 100 ? 0.2 : 0.01;
-        const newPrice = Math.max(0.01, item.price + drift * multiplier);
-        const nextPrice = parseFloat(newPrice.toFixed(item.price > 10 ? 2 : 4));
-        const changeDrift = drift * 0.1;
-        
-        if (item.ticker === activeAsset.ticker) {
-          setActiveAsset(prevAct => ({
-            ...prevAct,
-            price: nextPrice,
-            change: parseFloat((prevAct.change + changeDrift).toFixed(2))
-          }));
-        }
+    const valueCalculated = unitsVal * currentPriceVal;
+    const initialCostVal = unitsVal * avgCostVal;
+    const calculatedGain = valueCalculated - initialCostVal;
+    const gainPct = initialCostVal > 0 ? (calculatedGain / initialCostVal) * 100 : 0;
+
+    const nextHoldings = holdings.map(h => {
+      if (h.id === id) {
         return {
-          ...item,
-          price: nextPrice,
-          change: parseFloat((item.change + changeDrift).toFixed(2))
+          ...h,
+          units: unitsVal,
+          avgCost: avgCostVal,
+          currentPrice: currentPriceVal,
+          value: parseFloat(valueCalculated.toFixed(2)),
+          gainLoss: parseFloat(calculatedGain.toFixed(2)),
+          gainLossPct: parseFloat(gainPct.toFixed(2)),
+          notes: editNotes
         };
-      }));
+      }
+      return h;
+    });
 
-      // Simulate order book dynamic ticks
-      setOrderBook(prev => {
-        const next = [...prev];
-        const replaceIdx = Math.floor(Math.random() * next.length);
-        const type = next[replaceIdx].type;
-        const offset = type === 'ask' 
-          ? (Math.random() * activeAsset.price * 0.005) 
-          : -(Math.random() * activeAsset.price * 0.005);
-        
-        next[replaceIdx] = {
-          price: parseFloat((activeAsset.price + offset).toFixed(activeAsset.price > 10 ? 2 : 4)),
-          amount: parseFloat((Math.random() * 80 + 1).toFixed(2)),
-          type
+    // Re-tweak percentages based on next total sum
+    const totalSum = nextHoldings.reduce((sum, current) => sum + current.value, 0);
+    const finalizedHoldings = nextHoldings.map(h => ({
+      ...h,
+      allocationPct: parseFloat(((h.value / totalSum) * 100).toFixed(2))
+    }));
+
+    onUpdateHoldings(finalizedHoldings);
+    setEditingId(null);
+    onTriggerAlert({
+      type: 'success',
+      typeLabel: 'HOLDING RE-SYNCED',
+      title: 'Ledger Holding Updated',
+      description: `Manually reconciled parameters successfully. Total position size recalibrated to $${valueCalculated.toLocaleString()}.`
+    });
+  };
+
+  const handleTriggerThaiNavUpdate = (ticker: string) => {
+    setUpdatingThaiTicker(ticker);
+    const match = thaiFundNavs.find(f => f.ticker === ticker);
+    if (match) {
+      setThaiNavInput(match.nav.toString());
+    }
+  };
+
+  const handleSaveThaiNav = (ticker: string) => {
+    const navVal = parseFloat(thaiNavInput);
+    if (isNaN(navVal) || navVal <= 0) return;
+
+    // 1. Update Thai Fund NAV Bridge
+    const nextNavs = thaiFundNavs.map(f => {
+      if (f.ticker === ticker) {
+        return { ...f, nav: navVal, lastUpdated: new Date().toISOString().split('T')[0], isStale: false };
+      }
+      return f;
+    });
+    onUpdateThaiFundNavs(nextNavs);
+
+    // 2. Cascade changes back to holdings asset values
+    const matchNav = nextNavs.find(f => f.ticker === ticker);
+    const nextHoldings = holdings.map(h => {
+      if (h.ticker === ticker && matchNav) {
+        const nextValue = h.units * navVal;
+        const totalCostAndBasis = h.units * h.avgCost;
+        const calculatedGain = nextValue - totalCostAndBasis;
+        const gainPct = totalCostAndBasis > 0 ? (calculatedGain / totalCostAndBasis) * 100 : 0;
+        return {
+          ...h,
+          currentPrice: navVal,
+          value: parseFloat(nextValue.toFixed(2)),
+          gainLoss: parseFloat(calculatedGain.toFixed(2)),
+          gainLossPct: parseFloat(gainPct.toFixed(2))
         };
-        return next.sort((a, b) => b.price - a.price);
-      });
+      }
+      return h;
+    });
 
-    }, 2000);
+    const totalSum = nextHoldings.reduce((sum, current) => sum + current.value, 0);
+    const finalHoldings = nextHoldings.map(h => ({
+      ...h,
+      allocationPct: parseFloat(((h.value / totalSum) * 105).toFixed(2))
+    }));
 
-    return () => clearInterval(priceInterval);
-  }, [activeAsset.ticker]);
+    onUpdateHoldings(finalHoldings);
+    setUpdatingThaiTicker(null);
+    onTriggerAlert({
+      type: 'success',
+      typeLabel: 'THAI FUND RECONCILED',
+      title: `${ticker} NAV Updated`,
+      description: `NAV bridged to ${navVal} THB. Total sub-portfolio aggregates synchronized accordingly.`
+    });
+  };
 
-  const filteredAssets = assets.filter(item => 
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.ticker.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const categories = [
+    { id: 'all', label: 'All Assets' },
+    { id: 'us stock', label: 'US Stocks' },
+    { id: 'us etf', label: 'US ETFs' },
+    { id: 'thai mutual fund', label: 'Thai Funds' },
+    { id: 'cash', label: 'Cash & Others' }
+  ];
+
+  const filteredHoldings = holdings.filter(h => {
+    const matchesSearch = 
+      h.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (h.notes && h.notes.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    if (filterType === 'all') return matchesSearch;
+    if (filterType === 'cash') {
+      return matchesSearch && (h.type === 'Cash' || h.type === 'Sandbox Asset');
+    }
+    return matchesSearch && h.type.toLowerCase() === filterType;
+  });
 
   return (
-    <div className="space-y-8 animate-fade-in text-slate-800 dark:text-slate-100 pb-12">
+    <div className="space-y-8 animate-fade-in text-slate-850 dark:text-[#F4EEE4] pb-12 font-sans">
       
-      {/* Intro section heading */}
-      <section>
-        <h2 className="font-sans text-3xl font-semibold tracking-tight text-slate-900 dark:text-white transition-colors">
-          Asset & Market Matrix
-        </h2>
-        <p className="text-sm text-[#6F685F] dark:text-slate-400 mt-2">
-          Selected long-term assets, baseline target performance ranges, and registered liquidity depths.
-        </p>
+      {/* Title greeting */}
+      <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
+            AEQUITAS OPERATING SYSTEMS LEDGER
+          </span>
+          <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
+            Manual Asset Ledger
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
+            Audit and manually update position sizes, historical average costs, or custom mutual fund price benchmarks. Zero third-party tracker hooks required.
+          </p>
+        </div>
       </section>
 
-      {/* Grid container: Assets overview list and central asset trade book */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Assets List columns (7 cols) */}
-        <div className="lg:col-span-7 glass-panel rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
-          <div>
-            <span className="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400">SELECT ASSET</span>
-            <h3 className="text-base font-extrabold tracking-tight mt-1 mb-5">Tracked Institutional Collaterals</h3>
+      {/* Thai Fund NAV Bridge Panel (Calming bento widget) */}
+      <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden flex flex-col justify-between border border-slate-800/40">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-800/50 mb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Globe className="text-blue-400 shrink-0" size={16} />
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest leading-none">THAI FUND TAX NAV BRIDGE</span>
+            </div>
+            <h3 className="text-lg font-bold tracking-tight">Kasikorn S&P 500 RMF / SSF Nav Reconciliation</h3>
+          </div>
+          <p className="text-xs text-slate-400 mt-1 max-w-lg leading-relaxed">
+            Because Thai tax wrappers do not offer public JSON end points, NAV bridges are reconciled manually here. Tap a position to update standard benchmark pricing.
+          </p>
+        </div>
 
-            <div className="space-y-3">
-              {filteredAssets.length === 0 ? (
-                <p className="text-xs text-slate-400 py-6 text-center">No assets match search parameters.</p>
-              ) : (
-                filteredAssets.map((asset) => {
-                  const isSelected = asset.ticker === activeAsset.ticker;
-                  const isPositive = asset.change >= 0;
-                  
-                  return (
-                    <div
-                       id={`market-asset-${asset.ticker}`}
-                      key={asset.ticker}
-                      onClick={() => {
-                        setActiveAsset(asset);
-                        onTriggerAlert({
-                          type: 'advisory',
-                          typeLabel: 'MARKET SELECTION',
-                          title: `Tracking asset: ${asset.ticker}`,
-                          description: `Set live visual tickers strictly to active configuration of ${asset.name}.`
-                        });
-                      }}
-                      className={`p-4 rounded-2xl glass-panel cursor-pointer transition-all duration-300 flex items-center justify-between border ${
-                        isSelected 
-                          ? 'border-blue-600 dark:border-blue-400 bg-blue-50/20 dark:bg-blue-950/20 ring-2 ring-blue-500/10' 
-                          : 'border-slate-200/50 dark:border-slate-850 hover:border-blue-500 bg-white dark:bg-slate-900/10'
-                      }`}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+          {thaiFundNavs.map(fund => (
+            <div key={fund.ticker} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 flex justify-between items-center hover:border-slate-700 transition-colors">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-slate-500">{fund.ticker}</span>
+                <h4 className="text-xs font-semibold text-slate-200 mt-0.5">{fund.name}</h4>
+                <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1.5 font-mono">
+                  <span>Last Reconciled: {fund.lastUpdated}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                </p>
+              </div>
+
+              <div className="text-right flex flex-col items-end gap-1.5">
+                {updatingThaiTicker === fund.ticker ? (
+                  <div className="flex gap-1 items-center bg-transparent">
+                    <input 
+                      type="text" 
+                      value={thaiNavInput}
+                      onChange={(e) => setThaiNavInput(e.target.value)}
+                      className="bg-slate-950 p-1.5 rounded-lg border border-slate-800 text-xs w-20 text-center text-white"
+                      placeholder="e.g. 15.4"
+                    />
+                    <button 
+                      onClick={() => handleSaveThaiNav(fund.ticker)}
+                      className="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl font-bold flex items-center justify-center text-sm ${
-                          isSelected 
-                            ? 'bg-blue-600 text-white dark:bg-blue-600' 
-                            : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        }`}>
-                          {asset.logo}
-                        </div>
-                        <div>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="font-extrabold text-slate-805 dark:text-slate-200">{asset.ticker}</span>
-                            <span className="text-[11px] text-slate-400">{asset.name}</span>
-                          </div>
-                          <span className="text-[11px] text-slate-400">Vol: {asset.volume}</span>
-                        </div>
-                      </div>
+                      <Check size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-base font-bold font-mono text-emerald-400">{fund.nav.toFixed(2)} THB</span>
+                    <button 
+                      onClick={() => handleTriggerThaiNavUpdate(fund.ticker)}
+                      className="text-[10px] font-bold text-blue-400 hover:underline bg-transparent"
+                    >
+                      Override NAV
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-                      {/* Sparkline column block minimal render */}
-                      <div className="hidden sm:block w-24 h-8 select-none overflow-hidden">
-                        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 30">
-                          <polyline
-                            fill="none"
-                            stroke={isPositive ? '#10b981' : '#e11d48'}
-                            strokeWidth="2"
-                            points={asset.trend.map((val, idx) => {
-                              const min = Math.min(...asset.trend);
-                              const max = Math.max(...asset.trend);
-                              const range = max - min || 1;
-                              const x = (idx / (asset.trend.length - 1)) * 100;
-                              const y = 30 - ((val - min) / range) * 26 - 2;
-                              return `${x},${y}`;
-                            }).join(' ')}
+      {/* Holdings list filter parameters */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-transparent pb-1">
+        <div className="flex bg-slate-100 dark:bg-slate-900/40 p-1 rounded-xl w-fit flex-wrap border border-slate-200/50 dark:border-slate-800/5">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setFilterType(cat.id)}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
+                filterType === cat.id 
+                  ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-white shadow-sm font-bold' 
+                  : 'text-slate-400 hover:text-slate-800 dark:hover:text-slate-255'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-slate-450 font-mono">Positions Filtered: {filteredHoldings.length} Assets</span>
+      </div>
+
+      {/* Main Holdings parameters ledger table */}
+      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse min-w-[900px]">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100 dark:border-slate-800/5 text-[10px] tracking-widest font-black text-slate-400 uppercase">
+                <th className="px-6 py-4">TICKER</th>
+                <th className="px-6 py-4">ASSET NAME</th>
+                <th className="px-6 py-4">SECTOR TYPE</th>
+                <th className="px-6 py-4 font-mono text-right">UNITS HELD</th>
+                <th className="px-6 py-4 font-mono text-right">AVG COST (USD)</th>
+                <th className="px-6 py-4 font-mono text-right">MARKET NAV</th>
+                <th className="px-6 py-4 font-mono text-right">SUBTOTAL STATE</th>
+                <th className="px-6 py-4 text-center">ALLOCT %</th>
+                <th className="px-6 py-4 text-center">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-850/40 text-xs font-sans">
+              {filteredHoldings.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-12 text-center text-xs text-slate-400">No core assets found matching active filter.</td>
+                </tr>
+              ) : (
+                filteredHoldings.map((h) => {
+                  const isEditing = editingId === h.id;
+                  const isGain = h.gainLoss >= 0;
+                  return (
+                    <tr key={h.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors">
+                      <td className="px-6 py-4 font-mono font-bold text-blue-600 dark:text-blue-400">{h.ticker}</td>
+                      
+                      <td className="px-6 py-4">
+                        <span className="font-bold text-slate-850 dark:text-slate-200">{h.name}</span>
+                        {h.notes && (
+                          <span className="block text-[10px] text-slate-400 mt-0.5 max-w-xs truncate">{h.notes}</span>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] uppercase font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {h.type}
+                        </span>
+                      </td>
+
+                      {/* Units */}
+                      <td className="px-6 py-4 font-mono text-right font-medium text-slate-700 dark:text-slate-300">
+                        {isEditing ? (
+                          <input 
+                            type="text" 
+                            value={editUnits}
+                            onChange={(e) => setEditUnits(e.target.value)}
+                            className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
-                        </svg>
-                      </div>
+                        ) : (
+                          h.units.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                        )}
+                      </td>
 
-                      <div className="text-right">
-                        <span className="font-mono text-sm font-bold block text-slate-900 dark:text-white">
-                          ${asset.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                        </span>
-                        <span className={`text-xs font-bold inline-flex items-center mt-0.5 gap-0.5 ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                          {isPositive ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                          {asset.change.toFixed(2)}%
-                        </span>
-                      </div>
+                      {/* Average cost */}
+                      <td className="px-6 py-4 font-mono text-right font-medium text-slate-700 dark:text-slate-300">
+                        {isEditing ? (
+                          <input 
+                            type="text" 
+                            value={editAvgCost}
+                            onChange={(e) => setEditAvgCost(e.target.value)}
+                            className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
+                          />
+                        ) : (
+                          `$${h.avgCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                        )}
+                      </td>
 
-                    </div>
+                      {/* Market price */}
+                      <td className="px-6 py-4 font-mono text-right font-medium text-slate-900 dark:text-white">
+                        {isEditing ? (
+                          <input 
+                            type="text" 
+                            value={editPrice}
+                            onChange={(e) => setEditPrice(e.target.value)}
+                            className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
+                          />
+                        ) : (
+                          `$${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                        )}
+                      </td>
+
+                      {/* Computed Subtotal Value */}
+                      <td className="px-6 py-4 text-right">
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">${h.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className={`block font-mono text-[9px] uppercase font-semibold mt-0.5 ${isGain ? 'text-emerald-650' : 'text-rose-600'}`}>
+                          {isGain ? '▲' : '▼'} {isGain ? '+' : ''}{h.gainLossPct}%
+                        </span>
+                      </td>
+
+                      {/* Allocation percentage weights */}
+                      <td className="px-6 py-4 text-center font-mono font-bold text-slate-850 dark:text-slate-300">
+                        {h.allocationPct.toFixed(2)}%
+                      </td>
+
+                      {/* Action tools */}
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        {isEditing ? (
+                          <div className="flex gap-2 justify-center items-center">
+                            <button 
+                              onClick={() => handleSaveEdit(h.id)}
+                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold uppercase transition-all"
+                            >
+                              Save
+                            </button>
+                            <button 
+                              onClick={() => setEditingId(null)}
+                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-[10px] font-semibold uppercase transition-all"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2 justify-center items-center">
+                            <button 
+                              onClick={() => handleStartEdit(h)}
+                              className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-transparent"
+                              title="Edit parameters"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
                   );
                 })
               )}
-            </div>
-          </div>
-          
-          <div className="mt-8 border-t border-slate-200/50 dark:border-slate-800/20 pt-4 flex justify-between items-center text-xs">
-            <span className="text-slate-400 dark:text-slate-400">Institutional routing aligned to strategic allocations</span>
-            <button 
-              onClick={onExecuteTrade}
-              className="font-bold text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Review Limits
-            </button>
-          </div>
+            </tbody>
+          </table>
         </div>
-
-        {/* Dynamic Live order book (5 cols) */}
-        <div className="lg:col-span-5 glass-panel rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
-          <div>
-            <div className="flex justify-between items-start pb-4 border-b border-slate-250/20 dark:border-slate-800/15 mb-4">
-              <div>
-                <span className="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400">{activeAsset.ticker} CAPITAL BANDS</span>
-                <h4 className="text-sm font-extrabold text-slate-905 dark:text-white mt-0.5 animate-fade-in">Strategic Range Boundaries</h4>
-              </div>
-              <div className="text-right">
-                <span className="text-sm font-mono font-extrabold text-blue-600 dark:text-indigo-400 block">${activeAsset.price.toLocaleString()}</span>
-                <span className="text-[10px] text-slate-400">Aggregated Spot Rate</span>
-              </div>
-            </div>
-
-            {/* Bids Asks columns lists layout mapping exactly like terminal depth lists */}
-            <div className="space-y-3.5">
-              
-              {/* Asks (Sellers) */}
-              <div className="space-y-1.5 font-mono text-xs">
-                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 pb-1 border-b border-slate-100 dark:border-slate-800">
-                  <span>Lower Reserve Limit</span>
-                  <span>Target Ratio ({activeAsset.ticker})</span>
-                </div>
-                {orderBook.filter(o => o.type === 'ask').slice(0, 4).map((record, i) => (
-                  <div key={`ask-${i}`} className="flex justify-between text-slate-400 dark:text-slate-400 items-center">
-                    <span>${record.price.toLocaleString()}</span>
-                    <span className="text-slate-400 text-right">{record.amount.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Spread marker row */}
-              <div className="py-2.5 bg-blue-50/20 dark:bg-slate-900/35 rounded-xl text-center font-mono text-xs font-bold text-blue-600 dark:text-[#a5b4fc] border border-blue-500/10 shadow-sm flex justify-around">
-                <span>Spread Tolerance: {(activeAsset.price * 0.001).toFixed(activeAsset.price > 10 ? 2 : 4)}</span>
-                <span>Alignment Variance: 0.10%</span>
-              </div>
-
-              {/* Bids (Buyers) */}
-              <div className="space-y-1.5 font-mono text-xs">
-                {orderBook.filter(o => o.type === 'bid').slice(0, 4).map((record, i) => (
-                  <div key={`bid-${i}`} className="flex justify-between text-black dark:text-slate-200 items-center font-bold">
-                    <span>${record.price.toLocaleString()}</span>
-                    <span className="text-slate-400 text-right font-normal">{record.amount.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <button
-              onClick={onExecuteTrade}
-              className="w-full py-4 bg-blue-600 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl shadow-none hover:bg-blue-700 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer dark:bg-white dark:text-blue-650 dark:hover:bg-slate-100"
-            >
-              Review Plan for {activeAsset.ticker}
-            </button>
-          </div>
-        </div>
-
       </div>
 
     </div>

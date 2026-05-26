@@ -15,9 +15,9 @@ interface AIInsightsProps {
 }
 
 const TEMPLATE_SUGGESTIONS = [
-  { text: 'Compare Mean Reversion vs Cumulative Momentum under high volatility', topic: 'archetypes' },
-  { text: 'Evaluate Solana Core Portfolio Overview risk parameters', topic: 'solana' },
-  { text: 'Suggest optimization for thematic core allocations', topic: 'alpha' },
+  { text: 'Explain tax wrapper deductions of Thai RMF / SSF funds', topic: 'thai_tax' },
+  { text: 'Audit current deviation drifts for S&P 500 ETFs vs Growth stocks', topic: 'drift_audit' },
+  { text: 'How does compounding passive dividend reinvestments work here?', topic: 'dividends' },
 ];
 
 export default function AIInsightsTab({ onTriggerAlert }: AIInsightsProps) {
@@ -25,7 +25,7 @@ export default function AIInsightsTab({ onTriggerAlert }: AIInsightsProps) {
     {
       id: 'init',
       sender: 'ai',
-      text: 'Greetings. I am the Aequitas Portfolio Advisor, an automated guidance environment. I synthesize historical variance vectors, asset class boundaries, and structural themes to draft allocation plans. How can I assist you with your financial architecture today?',
+      text: 'Greetings. I am your Aequitas local strategy advisor. I evaluate asset drift indexes, S&P 500 trailing-yield indicators, and Thai retirement-saving tax wrap efficiency blocks to formulate balanced, long-term wealth guidelines. How can I assist you in your human-controlled planning process today?',
       timestamp: '02:00'
     }
   ]);
@@ -57,44 +57,39 @@ export default function AIInsightsTab({ onTriggerAlert }: AIInsightsProps) {
       let aiResponseText = '';
       const promptLower = textToSend.toLowerCase();
 
-      // Semantic keyword routing templates 
-      if (promptLower.includes('reversion') || promptLower.includes('momentum') || promptLower.includes('compare')) {
-        aiResponseText = `### Comparative Analysis: Mean Reversion vs Cumulative Momentum
+      // Semantic keyword routing templates
+      if (promptLower.includes('tax') || promptLower.includes('thai') || promptLower.includes('rmf')) {
+        aiResponseText = `### Kasikorn S&P 550 RMF Tax-Wrapper Audit
 
-Under dynamic macroeconomic conditions, correlation rules respond sequentially:
-1. **Mean Reversion**: Highly effective during range-bound intervals where assets drift from historical 90-day moving margins (alignment rating peaks at **94.2%** confidence). Risk indicators remain exceptionally low.
-2. **Cumulative Momentum**: Exceptional at capturing long-term generational expansion phases. Generates steady compounding effects over multiple quarters. Max drawdown bound is estimated under **-4.12%**.
+Reconciling Thai Retirement Mutual Funds (RMF) and Super Savings Funds (SSF) under local law:
+1. **Tax Savings Bounds**: Investments reduce active personal taxable income up to **30%** of gross income (standard caps apply up to **500,000 THB** package limits).
+2. **Holding Compliance**: RMF requires continuous annual holding blocks until age **55** and at least 5 full years of contributions. Withdrawal before this triggers retroactive tax penalty claims.
+3. **Optimized Target Selection**: Directing your monthly DCA allocations to Thai S&P 500 RMF indexes provides double compounding—capturing US equity growth while locking in **20%-35%** risk-free tax savings on input.`;
+      } else if (promptLower.includes('drift') || promptLower.includes('growth') || promptLower.includes('etf')) {
+        aiResponseText = `### Portfolio Drift & Volatility Vector Audit
 
-**Strategic Guidance**: Align **35%** of secondary reserves to Cumulative Momentum and **20%** to conservative Mean Reversion to stabilize overall portfolio volatility.`;
-      } else if (promptLower.includes('solana') || promptLower.includes('sol')) {
-        aiResponseText = `### Solana Core Allocation Risk Parameters
+Evaluating target weight boundaries across your structural portfolios:
+* **Growth Equities (MSFT, NVDA, GOOGL etc.)**: Currently at **44.3%** vs a target range cap of **40%**. Shows positive momentum but indicates a minor drift breach of **+4.3%**.
+* **Core S&P 500 ETF (VOO, SCHD)**: Currently at **31.7%** vs a target of **35%**. Consists of deep stable collateral.
+* **Calm Rebalancing Suggestion**: Under the Aequitas philosophy, we do NOT execute sudden liquidations. Redirect the next 3 consecutive **Monthly DCA contributions** exclusively to target S&P 500 and Cash Buffer positions ($3,500 target DCA bounds) to naturally compress growth-weight drifts without tax costs.`;
+      } else if (promptLower.includes('dividend') || promptLower.includes('passive') || promptLower.includes('compound')) {
+        aiResponseText = `### Passive Dividend Stream & Liquidity Compound Engine
 
-Comprehensive on-chain activity and consensus metrics evaluation:
-* **Gas Consumption Decay**: Consensus transaction fees remain optimized while overall smart contract calls rose **+28%** over the observation period, reflecting network stability.
-* **Capital Sizing & Allocation**: Aequitas trackers detected steady institucional inflows of **$410M** establishing solid baseline positions across long-term portfolios.
-* **Liquid Staking Yields**: Secondary yields via JitoSOL and related collaterals remain steady at **+7.2%**, providing a highly consistent performance curve.
-
-**Synthesis Risk Model**: Classify as **Core Standard Hold**. Aligning total Solana weighting to a targeted **18.0%** threshold improves asset distribution metrics.`;
-      } else if (promptLower.includes('suggest') || promptLower.includes('alpha') || promptLower.includes('optimization')) {
-        aiResponseText = `### Allocation Guidance Suggested Model: Thematic Core
-
-Re-weighting structural parameters minimizes volatility decay:
-* **Current Portfolio Weighting**: SOL allocation set at **12.5%** ($42.8K asset size).
-* **Suggested Optimized Rebalance**: Re-structure allocation to **18.0%** ($61.5K asset size), swapping standard spot layers for liquid staking options.
-* **Projected Outcome**: Target annual performance clears at **+23.8%** aggregate, with a simulated maximum drawdown bound stable under **-1.2%**.
-
-Review the suggested rebalance plan parameters via the **Allocation Guidance** widget in the **Portfolio Overview** panel to align the model instantly.`;
+Analyzing yield metrics from passive income holdings (JEPQ, SCHD, ABBV, etc.):
+* **Current Yield Runrate**: Monthly average cash flows are configured at **$1,650.00** ($19,800.00 annualized).
+* **Compounding Schedule**: Income distributions are held in cash buffer layers automatically. 
+* **Optimized Contribution Rules**: Allocating these dividends directly to your Standard ETF DCA plans (e.g. VOO) rather than spot withdrawals amplifies share accumulation curves by an estimated **+1.85%** annualized compounding spread.`;
       } else {
-        aiResponseText = `### Aequitas General Intelligence Synthesis
+        aiResponseText = `### Strategic Planning Synthesis
 
 Evaluating query: *&quot;${textToSend}&quot;*
 
-Based on active parameters:
-1. Connected block networks and registered settlement channels are highly optimized. Average alignment metrics rated at **98.2%** stability.
-2. Long-term thematic models remain fully authorized and online.
-3. Spreads on core holdings remain range-bound with spreads clearing inside 0.10% margins.
+Based on live local parameters:
+1. All portfolio drift indices are safely within standard risk-tolerance limits (current drift marker stable at **3.2%**).
+2. Passive expected stock dividends indicate steady coverage margins of **10.5x**.
+3. Thai fund wrappers comply perfectly with active local tax brackets.
 
-*Feel free to query comparing Strategy Archetypes (Mean Reversion vs Cumulative Momentum) or Solana Core details for tailored models.*`;
+*Suggestions: Ask about Thai RMF / SSF tax rules, rebalancing drift schedules, or dividend reinvestment triggers for specialized models.*`;
       }
 
       const aiMsg: ChatMessage = {
@@ -111,139 +106,156 @@ Based on active parameters:
       onTriggerAlert({
         type: 'success',
         typeLabel: 'SYNTHESIS COMPLETE',
-        title: 'Advisor Advice Mapped',
-        description: 'Aequitas Advisor successfully mapped block correlation ratios.'
+        title: 'Advisor Logic Generated',
+        description: 'Aequitas Advisor successfully synthesized optimal holding ratios.'
       });
-    }, 2500);
+    }, 2000);
   };
 
   return (
-    <div className="space-y-8 animate-fade-in text-[#252830] dark:text-[#F4EEE4] pb-12 flex flex-col h-[calc(100vh-140px)] min-h-[500px]">
+    <div className="space-y-8 animate-fade-in text-[#252830] dark:text-[#F4EEE4] pb-12 flex flex-col h-[calc(100vh-140px)] min-h-[500px] font-sans">
       
       {/* Top Header info */}
-      <section className="shrink-0 animate-fade-in duration-800">
-        <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white transition-colors">
+      <section className="shrink-0 animate-fade-in">
+        <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-0.5">
           Advisor Guidance Workspace
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-          De-compose complex strategy runs, optimize conservative risk limits, or study structural wealth themes.
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
+          De-compose complex strategy runs, optimize conservative risk limits, inspect Thai tax deductible guidelines, or study structural compound wealth themes.
         </p>
       </section>
 
-      {/* Main split work space helper: suggestions on left and chat on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow overflow-hidden">
+      {/* Main Interactive Workstation Area */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Helper prompts list (4 columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between shrink-0 h-fit lg:h-full">
-          <div>
-            <div className="flex gap-2 items-center text-blue-600 dark:text-blue-400 mb-4 animate-pulse">
-              <Sparkles size={18} />
-              <span className="text-xs font-bold uppercase tracking-widest">Guidance Queries</span>
-            </div>
-            
-            <h3 className="text-sm font-semibold mb-1 text-slate-800 dark:text-white">Interactive Templates</h3>
-            <p className="text-xs text-slate-400 mb-5">Click custom query to prompt the portfolio advisor.</p>
+        {/* Active chat screen (8 columns mapping) */}
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 shadow-sm flex flex-col border border-slate-205/60 dark:border-slate-800/25 bg-white">
+          
+          {/* Messages feed */}
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
+            {messages.map((msg) => (
+              <div 
+                key={msg.id}
+                className={`flex gap-3 max-w-[85%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : ''}`}
+              >
+                {/* Visual sender nodes */}
+                <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center text-xs font-bold shadow-sm ${
+                  msg.sender === 'user' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-slate-100 text-blue-600 dark:bg-slate-800 dark:text-blue-300'
+                }`}>
+                  {msg.sender === 'user' ? 'H' : <Brain size={14} />}
+                </div>
 
-            <div className="space-y-3">
-              {TEMPLATE_SUGGESTIONS.map((suggestion, idx) => (
+                <div className="space-y-1">
+                  <div className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                    msg.sender === 'user'
+                      ? 'bg-blue-600 text-white rounded-tr-none'
+                      : 'bg-slate-50 border border-slate-100 dark:bg-slate-900/40 dark:border-slate-800/20 rounded-tl-none font-sans text-slate-800 dark:text-slate-100'
+                  }`}>
+                    {msg.sender === 'ai' ? (
+                      <div className="markdown-body space-y-2 whitespace-pre-line antialiased">
+                        {msg.text}
+                      </div>
+                    ) : (
+                      <p className="font-medium whitespace-pre-wrap">{msg.text}</p>
+                    )}
+                  </div>
+                  <span className={`text-[9px] font-bold block text-slate-400 ${msg.sender === 'user' ? 'text-right' : ''}`}>
+                    {msg.sender === 'user' ? 'HUMAN DECISION' : 'AEQUITAS INTEL'} • {msg.timestamp}
+                  </span>
+                </div>
+              </div>
+            ))}
+            
+            {/* Thinking simulated loader bubble */}
+            {isTyping && (
+              <div className="flex gap-3 max-w-[80%]">
+                <div className="w-8 h-8 rounded-xl shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-blue-600">
+                  <Brain size={14} className="animate-pulse" />
+                </div>
+                <div className="bg-slate-50 border border-slate-100 dark:bg-slate-900/30 dark:border-slate-800/10 p-4 rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+            
+            <div ref={chatBottomRef} />
+          </div>
+
+          {/* Quick recommendations / preset pills */}
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/10 shrink-0">
+            <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider block mb-2">INTELLIGENCE CONSULTING TOPICS</span>
+            <div className="flex flex-wrap gap-2">
+              {TEMPLATE_SUGGESTIONS.map((sug) => (
                 <button
-                  id={`suggestion-${idx}`}
-                  key={idx}
-                  onClick={() => handleSend(suggestion.text)}
-                  className="w-full text-left p-4 rounded-2xl bg-white border border-slate-105/90 shadow-sm hover:border-blue-500 hover:bg-slate-50/50 dark:bg-slate-900/40 dark:border-slate-800/50 dark:hover:border-slate-400 transition-all text-xs font-semibold leading-normal text-slate-800 dark:text-slate-200 active:scale-98"
+                  key={sug.topic}
+                  onClick={() => handleSend(sug.text)}
+                  className="px-3.5 py-2 hover:bg-slate-100 text-slate-650 bg-slate-50 hover:text-blue-600 border border-slate-200/50 rounded-xl text-[11px] font-semibold text-left transition-all max-w-full duration-200 shadow-none hover:shadow-sm"
                 >
-                  {suggestion.text}
+                  {sug.text}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="hidden lg:flex p-4 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-500 dark:bg-slate-950/20 dark:border-slate-900/40 mt-6 leading-relaxed">
-            <AlertCircle size={14} className="shrink-0 text-slate-400 mt-0.5" />
-            <span>AI advisor models are for informational planning and review. Always verify target performance metrics and risk guidelines before final commitment.</span>
+          {/* Input control elements */}
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/10 shrink-0 flex gap-2">
+            <input 
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend(inputText)}
+              placeholder="Ask Advisor about tax wrappers, drift alignment rules, or reinvesting dividends..."
+              className="flex-1 bg-slate-50 hover:bg-slate-100 focus:bg-white text-xs sm:text-sm p-3 px-4 rounded-xl border border-slate-200 transition-all outline-none text-slate-900"
+            />
+            <button
+              onClick={() => handleSend(inputText)}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl aspect-square flex items-center justify-center p-3 font-semibold hover:shadow-lg transition-all shadow-blue-500/10 w-12 shrink-0 cursor-pointer"
+            >
+              <Send size={15} />
+            </button>
           </div>
+
         </div>
 
-        {/* Real Chat panel (8 columns) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl shadow-sm flex flex-col h-full overflow-hidden">
+        {/* Local parameter specs sidebar info panels (4 columns mapping) */}
+        <div className="lg:col-span-4 space-y-4 shrink-0 flex flex-col justify-between">
           
-          {/* Active bot heading */}
-          <div className="p-4 border-b border-slate-100 dark:border-slate-800/10 bg-slate-50/50 dark:bg-slate-950/20 flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/10">
-              <Sparkles size={20} />
-            </div>
+          <div className="glass-panel p-5 rounded-3xl border border-slate-205/60 dark:border-slate-800/25 bg-white flex-1 space-y-4">
             <div>
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Aequitas Portfolio Advisor</h4>
-              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider block mt-0.5">Active Advisor Route</span>
+              <span className="text-[10px] uppercase font-black text-blue-600 tracking-wider">operating parameters</span>
+              <h3 className="text-sm font-bold text-slate-900 mt-1 dark:text-white">Active Core Variables</h3>
+            </div>
+
+            <div className="space-y-3 font-sans text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-150 flex flex-col gap-1">
+                <span className="text-[10px] font-black uppercase text-slate-400">DECISION ARCHETYPE</span>
+                <span className="font-bold text-slate-850">Human-controlled Sovereign Portfolio</span>
+                <span className="text-[10px] text-slate-450 mt-0.5 leading-normal">
+                  All transaction guidelines, RMF tax choices, and drift offsets are monitored under manual user control.
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-150 flex flex-col gap-1">
+                <span className="text-[10px] font-black uppercase text-slate-400">ACTIVE DRIFT BARRIERS</span>
+                <span className="font-bold text-slate-850">3.5% Maximum Permissible Deviation</span>
+                <span className="text-[10px] text-slate-455 mt-0.5 leading-normal">
+                  DCA rebalance routing triggers when cumulative sector weights exceed target goals by +/- 3.5%.
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Messages list container */}
-          <div className="flex-grow overflow-y-auto p-6 space-y-4">
-            {messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                className={`flex gap-3 max-w-[85%] ${msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
-              >
-                
-                {/* Avatar icon */}
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                  msg.sender === 'user' 
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/40' 
-                    : 'bg-blue-600 text-white shadow-sm shadow-blue-500/10'
-                }`}>
-                  {msg.sender === 'user' ? 'ME' : <Sparkles size={14} />}
-                </div>
-
-                {/* Message bounds text card */}
-                <div className={`p-4 rounded-2xl text-xs leading-relaxed ${
-                  msg.sender === 'user'
-                    ? 'bg-blue-50/60 text-slate-800 dark:bg-blue-950/20 dark:text-slate-100 border border-blue-100/40 dark:border-blue-900/20 shadow-none'
-                    : 'bg-white dark:bg-slate-900/40 border border-slate-150 dark:border-slate-800/40 text-slate-800 dark:text-slate-100 whitespace-pre-line'
-                }`}>
-                  {msg.text}
-                  <span className="block text-[9px] text-slate-400 mt-1.5 font-mono text-right">{msg.timestamp}</span>
-                </div>
-
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex gap-3 mr-auto max-w-[80%]">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <Sparkles size={14} />
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 text-xs text-slate-450 font-mono italic flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0.2s' }} />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0.4s' }} />
-                  Aligning asset allocation options...
-                </div>
-              </div>
-            )}
-            <div ref={chatBottomRef} />
-          </div>
-
-          {/* Form input controls (shrinkable) */}
-          <div className="p-4 border-t border-slate-100 dark:border-slate-800/10 bg-slate-50/50 dark:bg-slate-950/20 shrink-0">
-            <div className="flex gap-3">
-              <input
-                id="ai-chat-input"
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend(inputText)}
-                placeholder="Ask about dynamic allocation bands, relative weights, theme details..."
-                className="flex-grow bg-white dark:bg-slate-900/80 rounded-xl px-4 py-2 text-xs border border-slate-200 dark:border-slate-800/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
-              />
-              <button
-                id="btn-ai-chat-send"
-                onClick={() => handleSend(inputText)}
-                className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 p-2 px-4 rounded-xl shadow-sm active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs font-semibold leading-none border border-blue-500/10"
-              >
-                <Send size={12} strokeWidth={2.5} />
-                Send
-              </button>
+          {/* Secure advisory disclaimer */}
+          <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-100/40 text-[11px] leading-relaxed text-slate-500 dark:bg-amber-950/10 dark:border-amber-800/20">
+            <div className="flex gap-2 items-start text-amber-800/80">
+              <AlertCircle size={15} className="shrink-0 mt-0.5" />
+              <p className="font-medium">
+                Advisory note: Information and modeling templates are generated offline inside local sandbox caches according to standard capital principles. Verify all targets against physical local laws before execution.
+              </p>
             </div>
           </div>
 
