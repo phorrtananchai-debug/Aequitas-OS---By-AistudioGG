@@ -1,0 +1,6 @@
+{
+  "name": "Aequitas Glass",
+  "description": "An editorial long-term investment operating system focusing on asset allocations, risk guidance, and long-term thematic portfolios.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
