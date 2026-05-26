@@ -18,7 +18,9 @@ import {
   CheckCircle2,
   Zap,
   ArrowUpRight,
-  ChevronRight
+  ChevronRight,
+  Camera,
+  Workflow
 } from 'lucide-react';
 import { TabType } from '../types';
 
@@ -74,6 +76,7 @@ export default function Sidebar({
     {
       groupTitle: 'Intelligence',
       items: [
+        { id: 'aiWorkflow' as TabType, label: 'AI Workflow', icon: Workflow, popup: 'aiWorkflow' },
         { id: 'aiAdvisor' as TabType, label: 'AI Advisor', icon: Sparkles, popup: 'aiAdvisor' }, // Maps to insights originally
         { id: 'labs' as TabType, label: 'Labs', icon: Beaker, popup: 'labs' }, // Maps to strategy originally
       ]
@@ -81,6 +84,7 @@ export default function Sidebar({
     {
       groupTitle: 'System',
       items: [
+        { id: 'snapshots' as TabType, label: 'Snapshots', icon: Camera, popup: null },
         { id: 'settings' as TabType, label: 'Settings', icon: SettingsIcon, popup: null },
       ]
     }
@@ -287,6 +291,33 @@ export default function Sidebar({
                               <p className="text-[10px] text-slate-400 leading-normal mt-2">
                                 Upcoming payout: <strong className="text-slate-600 dark:text-slate-350">$420.00 SOL Stake</strong> scheduled for Jun 1 deposition.
                               </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {item.popup === 'aiWorkflow' && (
+                          <div className="space-y-3.5">
+                            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-805/15 pb-2">
+                              <Workflow size={16} className="text-blue-600" />
+                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Manual AI Reasoning Cycle</span>
+                            </div>
+                            <div className="space-y-2.5">
+                              <div>
+                                <span className="text-[9px] text-slate-400 uppercase font-black block">Active Guidance Anchor</span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-1">Manual Input &harr; Export &harr; Import Loop</span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 font-medium font-sans">
+                                Manage local snapshot parameters and sync parsed AI suggestions safely.
+                              </p>
+                              <button
+                                onClick={() => {
+                                  setActiveTab('aiWorkflow');
+                                  setHoveredTab(null);
+                                }}
+                                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[10px] tracking-wider uppercase rounded-lg shadow-none flex items-center justify-center gap-1 cursor-pointer transition-all"
+                              >
+                                Open Workflow Hub
+                              </button>
                             </div>
                           </div>
                         )}

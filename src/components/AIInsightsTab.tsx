@@ -83,7 +83,7 @@ Re-weighting structural parameters minimizes volatility decay:
 * **Suggested Optimized Rebalance**: Re-structure allocation to **18.0%** ($61.5K asset size), swapping standard spot layers for liquid staking options.
 * **Projected Outcome**: Target annual performance clears at **+23.8%** aggregate, with a simulated maximum drawdown bound stable under **-1.2%**.
 
-Execute rebalance via the **Allocation Guidance** widget in the **Portfolio Overview** panel to enable the model instantly.`;
+Review the suggested rebalance plan parameters via the **Allocation Guidance** widget in the **Portfolio Overview** panel to align the model instantly.`;
       } else {
         aiResponseText = `### Aequitas General Intelligence Synthesis
 

@@ -6,7 +6,10 @@ import {
   Zap, 
   BarChart3, 
   ShieldCheck, 
-  LineChart 
+  LineChart,
+  Brain,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 import { TabType } from '../types';
 
@@ -34,11 +37,14 @@ export default function OverviewTab({
       
       {/* Intro greeting */}
       <section>
-        <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white transition-colors">
+        <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
+          manual local-first investment operating system
+        </span>
+        <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white transition-colors mt-0.5">
           Executive Dashboard Overview
         </h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-          An overarching visual synopsis of wealth alignments, premium allocation rules, and long-term targets.
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
+          Aequitas helps you think better, plan better, and review better. It is a non-custodial, local-first portfolio intelligence layer with no custody risks, order execution systems, or trading urgency.
         </p>
       </section>
 
@@ -73,6 +79,92 @@ export default function OverviewTab({
             </div>
           );
         })}
+      </div>
+
+      {/* CENTRAL VISUAL: Manual AI Investment Loop Section */}
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/45 shadow-sm space-y-6 relative overflow-hidden bg-gradient-to-br from-white via-white to-blue-50/10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-805/10 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Brain className="text-blue-600 dark:text-blue-400" size={18} />
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">ae active product core</span>
+            </div>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">Manual AI Investment Loop</h3>
+          </div>
+          <button 
+            onClick={() => setActiveTab('aiWorkflow')} 
+            className="flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline bg-blue-50/50 hover:bg-blue-100/50 dark:bg-slate-909/40 px-3 py-1.5 rounded-xl border border-blue-200/20 transition-all self-start sm:self-auto font-sans"
+          >
+            Go to AI Workflow Hub
+            <ArrowRight size={13} />
+          </button>
+        </div>
+
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-4xl">
+          Aequitas represents a calm manual investment cockpit. True local-first wealth planning operates safely without automatic order routers or broker dependencies. Use this workflow loop to plan your model:
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+          {/* Phase 1 */}
+          <div 
+            onClick={() => setActiveTab('portfolio')}
+            className="p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-905/30 hover:border-blue-400/50 border border-slate-100 dark:border-slate-805/10 rounded-2xl cursor-pointer transition-all space-y-2 group"
+          >
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">01. MANUAL INPUT</span>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600">Enter Holdings</h4>
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Input weights, recurrent options & targets manually with zero broker link requirements.
+            </p>
+          </div>
+
+          {/* Phase 2 */}
+          <div 
+            onClick={() => setActiveTab('portfolio')}
+            className="p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-905/30 hover:border-blue-400/50 border border-slate-100 dark:border-slate-805/10 rounded-2xl cursor-pointer transition-all space-y-2 group"
+          >
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">02. DASHBOARD PLOT</span>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600">Plot Dashboard</h4>
+            <p className="text-[10px] text-slate-400 leading-normal">
+              View your wealth parameters instantly in growth charts, yield curves, and metrics.
+            </p>
+          </div>
+
+          {/* Phase 3 */}
+          <div 
+            onClick={() => setActiveTab('aiWorkflow')}
+            className="p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-905/30 hover:border-blue-400/50 border border-slate-100 dark:border-slate-805/10 rounded-2xl cursor-pointer transition-all space-y-2 group"
+          >
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">03. EXPORT CONTEXT</span>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600">Export AI JSON</h4>
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Copy fully-structured JSON parameters of your current portfolio state.
+            </p>
+          </div>
+
+          {/* Phase 4 */}
+          <div 
+            onClick={() => setActiveTab('aiAdvisor')}
+            className="p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-905/30 hover:border-blue-400/50 border border-slate-100 dark:border-slate-805/10 rounded-2xl cursor-pointer transition-all space-y-2 group"
+          >
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">04. AI AUDIT</span>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600">AI Synthesize</h4>
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Send context to AI to reason on asset drifts, sector guidelines, and risk buffers.
+            </p>
+          </div>
+
+          {/* Phase 5 */}
+          <div 
+            onClick={() => setActiveTab('aiWorkflow')}
+            className="p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-905/30 hover:border-blue-400/50 border border-slate-100 dark:border-slate-805/10 rounded-2xl cursor-pointer transition-all space-y-2 group"
+          >
+            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">05. IMPORT PLAN</span>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-blue-600">Import & Sync</h4>
+            <p className="text-[10px] text-slate-400 leading-normal">
+              Import the suggested JSON state back to immediately update allocation guidance.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Main core bento sections */}

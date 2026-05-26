@@ -22,6 +22,8 @@ import DividendsTab from './components/DividendsTab';
 import DcaPlanTab from './components/DcaPlanTab';
 import AllocationTab from './components/AllocationTab';
 import SettingsTab from './components/SettingsTab';
+import AIWorkflowTab from './components/AIWorkflowTab';
+import SnapshotsTab from './components/SnapshotsTab';
 
 // Initial mock dataset
 const INITIAL_NOTIFICATION_QUEUE: AlertItem[] = [
@@ -265,6 +267,23 @@ export default function App() {
 
           {activeTab === 'dcaPlan' && (
             <DcaPlanTab />
+          )}
+
+          {activeTab === 'aiWorkflow' && (
+            <AIWorkflowTab 
+              portfolioValue={portfolioValue}
+              onUpdatePortfolio={setPortfolioValue}
+              onTriggerAlert={pushNotification}
+              setActiveTab={setActiveTab}
+            />
+          )}
+
+          {activeTab === 'snapshots' && (
+            <SnapshotsTab 
+              portfolioValue={portfolioValue}
+              onUpdatePortfolio={setPortfolioValue}
+              onTriggerAlert={pushNotification}
+            />
           )}
 
           {(activeTab === 'aiAdvisor' || activeTab === 'insights') && (
