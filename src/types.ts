@@ -248,3 +248,9 @@ export interface StrategyArchetype {
   risk: string;
   active?: boolean;
 }
+
+export interface MigrationStatus {
+  source: 'old-local-storage' | 'new-state' | 'sample-state';
+  migratedAt: string | null;
+  warnings: string[];
+}

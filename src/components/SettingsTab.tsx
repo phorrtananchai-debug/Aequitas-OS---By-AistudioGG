@@ -1,4 +1,5 @@
 import React, { useState, FormEvent } from 'react';
+import { MigrationStatus } from '../types';
 import { 
   Settings as SettingsIcon, 
   ShieldAlert, 
@@ -28,6 +29,7 @@ interface SettingsTabProps {
   portfolioValue: number;
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
+  migrationStatus: MigrationStatus | null;
 }
 
 type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs';
@@ -35,7 +37,8 @@ type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 
 export default function SettingsTab({
   portfolioValue,
   onUpdatePortfolio,
-  onTriggerAlert
+  onTriggerAlert,
+  migrationStatus
 }: SettingsTabProps) {
   // Active settings tab category
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -539,6 +542,31 @@ export default function SettingsTab({
                         {gdriveSync ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
                       </button>
                     </div>
+
+                    {/* Migration Status */}
+                    {migrationStatus && (
+                      <div className="p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-900/10 border border-blue-100/30 dark:border-slate-800/10 space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">Production Migration Status</span>
+                          <span className="text-[10px] font-mono text-slate-400">{migrationStatus.migratedAt ? new Date(migrationStatus.migratedAt).toLocaleString() : 'N/A'}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-[11px]">
+                          <div>
+                            <span className="text-slate-400 block">Data Source</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-300">{migrationStatus.source}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block">Status</span>
+                            <span className="font-bold text-emerald-600">Sync Active</span>
+                          </div>
+                        </div>
+                        {migrationStatus.warnings.length > 0 && (
+                          <div className="mt-2 p-2 rounded bg-rose-50 dark:bg-rose-950/20 text-rose-600 text-[9px]">
+                            {migrationStatus.warnings.join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Future broker integration option */}
                     <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
