@@ -32,12 +32,13 @@ export default function ActivityTab({
 
   const filteredActivities = activities.filter(act => {
     const matchesSearch = 
-      act.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      act.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      act.id.toLowerCase().includes(searchQuery.toLowerCase());
+      (act.notes || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      act.asset.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      act.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      act.type.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (filterType === 'all') return matchesSearch;
-    return matchesSearch && act.category.toLowerCase() === filterType.toLowerCase();
+    return matchesSearch && act.type.toLowerCase() === filterType.toLowerCase();
   });
 
   const triggerExportLogs = () => {
@@ -51,20 +52,22 @@ export default function ActivityTab({
 
   const getCategoryColor = (category: string) => {
     switch(category.toLowerCase()) {
-      case 'dca split':
+      case 'hold':
         return 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400';
-      case 'portfolio':
-        return 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400';
-      case 'ai plan':
+      case 'review':
         return 'bg-purple-50 text-purple-600 dark:bg-purple-950/20 dark:text-purple-400';
-      case 'thai fund':
+      case 'manual action':
+        return 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400';
+      case 'contribution':
         return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400';
+      case 'reduce':
+        return 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400';
       default:
         return 'bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400';
     }
   };
 
-  const categories = ['all', 'Portfolio', 'DCA Split', 'AI Plan', 'Thai Fund'];
+  const categories = ['all', 'Contribution', 'Review', 'Manual Action', 'Hold', 'Reduce'];
 
   return (
     <div className="space-y-8 animate-fade-in text-slate-800 dark:text-slate-100 pb-12 font-sans">
@@ -150,22 +153,25 @@ export default function ActivityTab({
                       <td className="px-6 py-4 text-xs font-mono font-bold text-slate-400 dark:text-slate-500 truncate max-w-[120px]">{log.id}</td>
                       
                       <td className="px-6 py-4">
-                        <span className={`text-[9px] uppercase font-bold px-2.5 py-1 rounded-full ${getCategoryColor(log.category)}`}>
-                          {log.category}
+                        <span className={`text-[9px] uppercase font-bold px-2.5 py-1 rounded-full ${getCategoryColor(log.type)}`}>
+                          {log.type}
                         </span>
                       </td>
 
                       <td className="px-6 py-4">
-                        <span className="font-semibold text-slate-800 dark:text-white">{log.description}</span>
+                        <span className="font-semibold text-slate-800 dark:text-white">
+                          <span className="font-mono text-xs font-bold text-blue-600 mr-2">[{log.asset}]</span>
+                          {log.notes || 'No notes provided'}
+                        </span>
                       </td>
 
                       <td className="px-6 py-4 text-center font-mono font-medium text-slate-900 dark:text-white">
-                        {log.valueImpact !== undefined ? (
-                          log.valueImpact === 0 ? (
+                        {log.amount !== undefined ? (
+                          log.amount === 0 ? (
                             <span className="text-slate-400">Neutral</span>
                           ) : (
-                            <span className={log.valueImpact > 0 ? 'text-emerald-600 font-bold' : 'text-slate-500 font-bold'}>
-                              {log.valueImpact > 0 ? '+' : ''}${log.valueImpact.toLocaleString()}
+                            <span className="text-slate-950 dark:text-slate-50 font-bold">
+                              ${log.amount.toLocaleString()}
                             </span>
                           )
                         ) : (
@@ -174,7 +180,7 @@ export default function ActivityTab({
                       </td>
 
                       <td className="px-6 py-4 text-center font-semibold text-slate-500">
-                        {log.category === 'AI Plan' ? 'AI SUGGESTION' : 'LOCAL OS'}
+                        {log.type === 'Review' ? 'AI AUDIT' : 'LOCAL WORKSPACE'}
                       </td>
 
                       <td className="px-6 py-4 font-mono text-slate-450 dark:text-slate-400 whitespace-nowrap">

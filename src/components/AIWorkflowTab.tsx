@@ -12,7 +12,7 @@ import {
   FileCode,
   LayoutDashboard
 } from 'lucide-react';
-import { Holding, DcaPlan, DividendPlan, ThaiFundNavState, AiImportSchema, AlertItem, TabType } from '../types';
+import { Holding, DcaPlan, DividendPlan, ThaiFundNavState, AiImportSchema, AlertItem, TabType, LabsSuggestion } from '../types';
 
 interface AIWorkflowTabProps {
   portfolioValue: number;
@@ -24,6 +24,8 @@ interface AIWorkflowTabProps {
   latestImportStatus: string | null;
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
   setActiveTab: (tab: TabType) => void;
+  labsSuggestions?: LabsSuggestion[];
+  onUpdatePortfolio?: (val: number) => void;
 }
 
 export default function AIWorkflowTab({
@@ -35,7 +37,9 @@ export default function AIWorkflowTab({
   onImportAiSchema,
   latestImportStatus,
   onTriggerAlert,
-  setActiveTab
+  setActiveTab,
+  labsSuggestions,
+  onUpdatePortfolio
 }: AIWorkflowTabProps) {
   const [copied, setCopied] = useState(false);
   const [pastedJson, setPastedJson] = useState('');
@@ -64,14 +68,31 @@ export default function AIWorkflowTab({
       allocation_pct: h.allocationPct
     })),
     monthly_dca_plan: {
-      is_active: dcaPlan.isActive,
-      target_monthly_contribution: dcaPlan.targetContribution,
-      reallocation_strategy: dcaPlan.strategyId,
-      split_ratios: dcaPlan.splitRatios
+      monthlyContributionPlan: dcaPlan.monthlyContributionPlan,
+      cashAvailable: dcaPlan.cashAvailable,
+      nextContributionReminder: dcaPlan.nextContributionReminder,
+      items: dcaPlan.items.map(item => ({
+        ticker: item.ticker,
+        name: item.name,
+        targetAmount: item.targetAmount,
+        priorityOrder: item.priorityOrder,
+        interval: item.interval,
+        status: item.status
+      }))
     },
-     dividend_yields: {
-      monthly_expected_usd: dividendPlan.monthlyAverage,
-      reinvest_target_ticker: dividendPlan.reinvestTicker
+    dividend_plan: {
+      expectedMonthlyDividend: dividendPlan.expectedMonthlyDividend,
+      annualizedIncomeEstimate: dividendPlan.annualizedIncomeEstimate,
+      reinvestmentStatusDefault: dividendPlan.reinvestmentStatusDefault,
+      cashflowStabilityNotes: dividendPlan.cashflowStabilityNotes,
+      items: dividendPlan.items.map(item => ({
+        ticker: item.ticker,
+        name: item.name,
+        yield: item.yield,
+        annualEst: item.annualEst,
+        frequency: item.frequency,
+        reinvestmentStatus: item.reinvestmentStatus
+      }))
     },
     thai_nav_bridge_states: thaiFundNavs.map(f => ({
       ticker: f.ticker,
@@ -104,16 +125,25 @@ export default function AIWorkflowTab({
       const parsed = JSON.parse(pastedJson);
       
       // Basic validation checks
-      if (!parsed.total_portfolio_value && !parsed.live_holdings && !parsed.monthly_dca_plan) {
+      const hasValidKey = 
+        parsed.portfolioSummary || 
+        parsed.assetPlans || 
+        parsed.allocationPlan || 
+        parsed.dcaPlan || 
+        parsed.dividendNotes || 
+        parsed.dailyBrief || 
+        parsed.labsSuggestions;
+
+      if (!hasValidKey) {
         setImportSuccess(false);
-        setImportFeedback("JSON parsed correctly, but matches no recognizable schema elements. Please structure with 'total_portfolio_value', 'live_holdings' or 'monthly_dca_plan'.");
+        setImportFeedback("JSON parsed correctly, but matches no recognizable schema elements of Aequitas AI Import Schema.");
         return;
       }
 
       // Execute Central State callback!
       onImportAiSchema(parsed as AiImportSchema);
       setImportSuccess(true);
-      setImportFeedback("Aequitas schema compiled successfully! Active core holdings, monthly DCA targets, and drift ratings have been synchronized offline.");
+      setImportFeedback("Aequitas schema compiled successfully! Active core holdings, monthly DCA targets, and allocation drift notes have been synchronized offline.");
       setPastedJson('');
     } catch (err: any) {
       setImportSuccess(false);
@@ -127,7 +157,7 @@ export default function AIWorkflowTab({
       {/* Title block */}
       <section>
         <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
-          AEQUITAS SEAMLESS PRIVATE REASONING LOOP
+          Manual AI Investment Loop
         </span>
         <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
           AI Workflow Hub
@@ -167,7 +197,7 @@ export default function AIWorkflowTab({
             <span className="text-[10px] font-bold text-blue-605 block">STEP 3</span>
             <h4 className="text-xs font-bold text-slate-800 dark:text-white">Export Context</h4>
             <p className="text-[11px] text-slate-450 leading-normal">
-              Generate unified privacy-safe JSON parameters containing active core states.
+              Generate unified privacy-safe JSON parameters containing active portfolio state.
             </p>
           </div>
 
@@ -192,7 +222,7 @@ export default function AIWorkflowTab({
         <div className="mt-6 p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-900/10 border border-blue-100/30 dark:border-slate-800/10 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
           <Sparkles size={14} className="text-blue-650 shrink-0" />
           <p className="font-semibold leading-relaxed">
-            Data Sovereignty Principle: Aequitas never connects to brokerage accounts, exchanges, or auto-trading platforms. Every rebalance action is decided, audited, and scheduled by you manually.
+            Data Sovereignty Principle: Aequitas runs entirely as a manual planning tool. There are no brokerage links or automated trading triggers. Rebalance targets and DCA allocations are customized and applied manually.
           </p>
         </div>
       </div>
@@ -237,7 +267,7 @@ export default function AIWorkflowTab({
               <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800/10">
                 <div className="flex gap-2 items-center text-blue-600">
                   <Upload size={16} />
-                  <span className="text-[10px] font-black uppercase tracking-widest leading-none text-slate-450">SECURED RECONCILIATION GATEWAY</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest leading-none text-slate-450">AI Plan Import</span>
                 </div>
               </div>
 
@@ -251,7 +281,63 @@ export default function AIWorkflowTab({
               <textarea
                 value={pastedJson}
                 onChange={(e) => setPastedJson(e.target.value)}
-                placeholder={`{\n  "total_portfolio_value": 485000,\n  "monthly_dca_plan": {\n    "target_contribution": 3500\n  }\n}`}
+                placeholder={JSON.stringify({
+  "portfolioSummary": {
+    "totalValue": 500000,
+    "portfolioHealth": 92,
+    "allocationDriftPct": 2.8,
+    "reviewItemsCount": 3
+  },
+  "assetPlans": [
+    {
+      "ticker": "VOO",
+      "action": "Accumulate",
+      "targetAllocationPct": 30,
+      "notes": "Use future DCA to increase core exposure."
+    }
+  ],
+  "allocationPlan": {
+    "buckets": [
+      { "name": "Core ETF Layer", "targetPct": 35 },
+      { "name": "Growth Layer", "targetPct": 35 },
+      { "name": "Dividend / Behavior Layer", "targetPct": 15 },
+      { "name": "Thai Tax Wrapper Layer", "targetPct": 12 },
+      { "name": "Sandbox Layer", "targetPct": 3 }
+    ],
+    "rebalanceGuidance": "Redirect new monthly DCA toward core ETF and Thai RMF before adding more growth.",
+    "priorityActions": [
+      "Increase VOO contribution",
+      "Maintain K-US500XRMF schedule",
+      "Do not expand sandbox allocation"
+    ]
+  },
+  "dcaPlan": {
+    "monthlyContributionPlan": 5500,
+    "items": [
+      { "ticker": "VOO", "targetAmount": 1800 },
+      { "ticker": "K-US500XRMF", "targetAmount": 1300 }
+    ]
+  },
+  "dividendNotes": "Keep SCHD and JEPQ as behavioral income anchors. Reinvest unless cash buffer drops below target.",
+  "dailyBrief": {
+    "todayObservation": "Portfolio is stable. Core allocation can be strengthened through future DCA.",
+    "todayReviewActions": [
+      "Review VOO target contribution",
+      "Check RMF annual tax wrapper limit",
+      "Monitor sandbox exposure"
+    ],
+    "riskWarnings": [
+      "Growth layer remains slightly above target."
+    ]
+  },
+  "labsSuggestions": [
+    {
+      "ticker": "RBRK",
+      "reason": "Keep as small sandbox exposure only.",
+      "riskScore": "High"
+    }
+  ]
+}, null, 2)}
                 className="w-full h-44 font-mono text-[11px] bg-slate-5 border border-slate-150 rounded-xl p-4 text-slate-900 dark:text-white resize-none outline-none focus:outline-none focus:border-blue-500 leading-relaxed"
               />
 
@@ -275,7 +361,7 @@ export default function AIWorkflowTab({
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-xs tracking-wider uppercase py-4 rounded-xl flex items-center justify-center gap-1.5 active:scale-98 transition-all cursor-pointer mt-4"
             >
               <CheckCircle2 size={13} />
-              Commit AI Allocation Plan
+              Import AI Plan
             </button>
           </form>
         </div>

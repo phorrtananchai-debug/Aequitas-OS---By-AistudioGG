@@ -115,7 +115,7 @@ export default function OverviewTab({
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
           {/* Phase 1 */}
           <div 
-            onClick={() => setActiveTab('portfolio')}
+            onClick={() => setActiveTab('holdings')}
             className="p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-905/30 hover:border-blue-400/50 border border-slate-100 dark:border-slate-805/10 rounded-2xl cursor-pointer transition-all space-y-2 group"
           >
             <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">01. MANUAL INPUT</span>
@@ -127,7 +127,7 @@ export default function OverviewTab({
 
           {/* Phase 2 */}
           <div 
-            onClick={() => setActiveTab('portfolio')}
+            onClick={() => setActiveTab('holdings')}
             className="p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-905/30 hover:border-blue-400/50 border border-slate-100 dark:border-slate-805/10 rounded-2xl cursor-pointer transition-all space-y-2 group"
           >
             <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">02. DASHBOARD PLOT</span>

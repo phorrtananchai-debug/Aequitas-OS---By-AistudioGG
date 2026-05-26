@@ -74,7 +74,7 @@ const INITIAL_HOLDINGS: Holding[] = [
 const INITIAL_DCA_PLAN: DcaPlan = {
   monthlyContributionPlan: 5500.00,
   cashAvailable: 8690.00,
-  nextContributionReminder: 'June 1, 2526',
+  nextContributionReminder: 'June 1, 2026',
   items: [
     { id: 'dca-1', ticker: 'VOO', name: 'Vanguard S&P 500 ETF', targetAmount: 1500, priorityOrder: 1, interval: 'Monthly', status: 'Pending' },
     { id: 'dca-2', ticker: 'K-US500XRMF', name: 'Kasikorn US Equity RMF', targetAmount: 1200, priorityOrder: 2, interval: 'Monthly', status: 'Pending' },
@@ -271,7 +271,7 @@ export default function App() {
 
     // Let's modify states based on imported schema fields
     if (parsed.portfolioSummary) {
-      const { totalValue, portfolioHealth, allocationDriftPct, reviewItemsCount } = parsed.portfolioSummary;
+      const { totalValue } = parsed.portfolioSummary;
       
       // Update asset cash holdings value if totalValue varies or updates
       if (typeof totalValue === 'number') {
@@ -293,13 +293,13 @@ export default function App() {
       });
     }
 
-    if (parsed.assetPlans && parsed.assetPlans.length > 0) {
+    if (Array.isArray(parsed.assetPlans) && parsed.assetPlans.length > 0) {
       setHoldings(prev => prev.map(holding => {
-        const match = parsed.assetPlans.find(ap => ap.ticker.toLowerCase() === holding.ticker.toLowerCase());
+        const match = parsed.assetPlans.find(ap => ap && ap.ticker && ap.ticker.toLowerCase() === holding.ticker.toLowerCase());
         if (match) {
           return {
             ...holding,
-            notes: `${holding.notes ? holding.notes + ' | ' : ''}AI SUGGESTS: ${match.action} (${match.notes})`,
+            notes: `${holding.notes ? holding.notes + ' | ' : ''}AI SUGGESTS: ${match.action} (${match.notes || ''})`,
             targetAllocationPct: match.targetAllocationPct
           };
         }
@@ -309,13 +309,14 @@ export default function App() {
 
     if (parsed.dcaPlan) {
       setDcaPlan(prev => {
-        const updatedItems = prev.items.map(item => {
-          const matchingImportItem = parsed.dcaPlan.items.find(x => x.ticker.toLowerCase() === item.ticker.toLowerCase());
+        const dcaPlanItems = parsed.dcaPlan?.items;
+        const updatedItems = Array.isArray(dcaPlanItems) ? prev.items.map(item => {
+          const matchingImportItem = dcaPlanItems.find(x => x && x.ticker && x.ticker.toLowerCase() === item.ticker.toLowerCase());
           if (matchingImportItem) {
             return { ...item, targetAmount: matchingImportItem.targetAmount };
           }
           return item;
-        });
+        }) : prev.items;
         return {
           ...prev,
           monthlyContributionPlan: parsed.dcaPlan.monthlyContributionPlan ?? prev.monthlyContributionPlan,
@@ -325,22 +326,28 @@ export default function App() {
     }
 
     if (parsed.dailyBrief) {
-      setDailyBrief(prev => ({
-        ...prev,
-        aiObservation: parsed.dailyBrief.todayObservation,
-        whatToReviewToday: parsed.dailyBrief.todayReviewActions,
-        riskConcentrationNote: parsed.dailyBrief.riskWarnings.join('; ')
-      }));
+      setDailyBrief(prev => {
+        const riskWarnings = parsed.dailyBrief?.riskWarnings;
+        const newRiskConcentration = Array.isArray(riskWarnings) 
+          ? riskWarnings.join('; ') 
+          : (riskWarnings || '');
+        return {
+          ...prev,
+          aiObservation: parsed.dailyBrief.todayObservation || prev.aiObservation,
+          whatToReviewToday: Array.isArray(parsed.dailyBrief.todayReviewActions) ? parsed.dailyBrief.todayReviewActions : prev.whatToReviewToday,
+          riskConcentrationNote: newRiskConcentration || prev.riskConcentrationNote
+        };
+      });
     }
 
-    if (parsed.labsSuggestions && parsed.labsSuggestions.length > 0) {
+    if (Array.isArray(parsed.labsSuggestions) && parsed.labsSuggestions.length > 0) {
       const parsedSuggestions: LabsSuggestion[] = parsed.labsSuggestions.map((ls, index) => ({
         id: `ls-imported-${index}-${Date.now()}`,
-        title: `AI: ${ls.ticker} Sandbox Proposal`,
-        description: ls.reason,
-        sandboxAsset: ls.ticker,
-        tacticalIdea: `Evaluate ${ls.ticker} asset at High Risk target limits`,
-        scenarioImpact: `Risk rating analyzed as ${ls.riskScore}`,
+        title: `AI: ${ls.ticker || ''} Sandbox Proposal`,
+        description: ls.reason || '',
+        sandboxAsset: ls.ticker || '',
+        tacticalIdea: `Evaluate ${ls.ticker || ''} asset at High Risk target limits`,
+        scenarioImpact: `Risk rating analyzed as ${ls.riskScore || 'Unknown'}`,
         riskLevel: ls.riskScore === 'High' ? 'High' : 'Speculative'
       }));
       setLabsSuggestions(prev => [...parsedSuggestions, ...prev]);

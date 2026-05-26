@@ -24,12 +24,14 @@ interface SnapshotsTabProps {
   portfolioValue: number;
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
+  holdings?: any[];
 }
 
 export default function SnapshotsTab({
   portfolioValue,
   onUpdatePortfolio,
-  onTriggerAlert
+  onTriggerAlert,
+  holdings
 }: SnapshotsTabProps) {
   const [snapshots, setSnapshots] = useState<SnapshotItem[]>([
     {
@@ -37,7 +39,7 @@ export default function SnapshotsTab({
       name: 'Main Ledger Archive - April 2026 Sync',
       timestamp: '2026-04-12T14:32:00Z',
       value: 462000,
-      node: 'sol-09',
+      node: 'Primary Ledger',
       drift: '3.1%'
     },
     {
@@ -45,7 +47,7 @@ export default function SnapshotsTab({
       name: 'Q1 Rebalance Baseline',
       timestamp: '2026-01-05T09:15:00Z',
       value: 415300,
-      node: 'sol-09',
+      node: 'Primary Ledger',
       drift: '2.8%'
     }
   ]);
@@ -61,7 +63,7 @@ export default function SnapshotsTab({
       name: nameToSave,
       timestamp: new Date().toISOString(),
       value: portfolioValue,
-      node: 'sol-09',
+      node: 'Primary Ledger',
       drift: '3.2%'
     };
 

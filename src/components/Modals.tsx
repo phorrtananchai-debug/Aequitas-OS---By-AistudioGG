@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Building
 } from 'lucide-react';
-import { TabType, AlertItem, TradeLog, SimulationRun } from '../types';
+import { TabType, AlertItem, SimulationRun } from '../types';
 
 interface ModalsProps {
   tradeModalOpen: boolean;
@@ -29,7 +29,7 @@ interface ModalsProps {
   
   portfolioValue: number;
   onUpdatePortfolio: (value: number) => void;
-  onAddTrade: (trade: Omit<TradeLog, 'id' | 'timestamp' | 'status'>) => void;
+  onAddActivity: (activity: { type: 'Hold' | 'Review' | 'Manual Action' | 'Contribution' | 'Reduce'; asset: string; amount: number; price?: number; total?: number; notes?: string }) => void;
   onAddSimulation: (sim: Omit<SimulationRun, 'id'>) => void;
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
 }
@@ -45,16 +45,16 @@ export default function Modals({
   onCloseSupportModal,
   portfolioValue,
   onUpdatePortfolio,
-  onAddTrade,
+  onAddActivity,
   onAddSimulation,
   onTriggerAlert
 }: ModalsProps) {
 
   // Trade Modal states
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
-  const [selectedAsset, setSelectedAsset] = useState('SOL');
+  const [selectedAsset, setSelectedAsset] = useState('VOO');
   const [tradeAmount, setTradeAmount] = useState(10);
-  const [tradePrice, setTradePrice] = useState(148.24);
+  const [tradePrice, setTradePrice] = useState(485.50);
   const [isExecutingTrade, setIsExecutingTrade] = useState(false);
 
   // Analysis Modal states
@@ -69,11 +69,11 @@ export default function Modals({
   // Asset Price reference mapper
   const getAssetPrice = (symbol: string) => {
     switch(symbol) {
-      case 'SOL': return 148.24;
-      case 'BTC': return 68420.00;
-      case 'ETH': return 3480.50;
-      case 'JUP': return 1.15;
-      case 'PYTH': return 0.52;
+      case 'VOO': return 485.50;
+      case 'K-US500XRMF': return 15.39;
+      case 'SCHD': return 78.20;
+      case 'TLT': return 92.40;
+      case 'JEPQ': return 54.10;
       default: return 100;
     }
   };
@@ -105,12 +105,13 @@ export default function Modals({
       onUpdatePortfolio(portfolioValue + valueDiff);
 
       // Save clearing record
-      onAddTrade({
-        type: tradeType,
+      onAddActivity({
+        type: tradeType === 'BUY' ? 'Manual Action' : 'Reduce',
         asset: selectedAsset,
-        amount: tradeAmount,
+        amount: cost,
         price: tradePrice,
-        total: cost
+        total: cost,
+        notes: `Spot order clearing: ${tradeType === 'BUY' ? 'Added' : 'Reduced'} ${tradeAmount} units of ${selectedAsset}`
       });
 
       onTriggerAlert({
@@ -224,7 +225,7 @@ export default function Modals({
                   onChange={(e) => handleAssetChange(e.target.value)}
                   className="w-full bg-white dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 focus:outline-none text-xs"
                 >
-                  {['SOL', 'BTC', 'ETH', 'JUP', 'PYTH'].map(ticker => (
+                  {['VOO', 'K-US500XRMF', 'SCHD', 'TLT', 'JEPQ'].map(ticker => (
                     <option key={ticker} value={ticker}>{ticker} - Core holding</option>
                   ))}
                 </select>

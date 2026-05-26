@@ -34,6 +34,7 @@ export interface Holding {
   gainLoss: number;
   gainLossPct: number;
   allocationPct: number;
+  targetAllocationPct?: number;
   dividendYield?: number;
   dividendType?: 'cash' | 'reinvest';
   notes?: string;
@@ -226,4 +227,24 @@ export interface ActivityItem {
   timestamp: string;
   status: 'COMPLETED' | 'PENDING' | 'SKIPPED';
   notes?: string;
+}
+
+export interface SimulationRun {
+  id: string;
+  strategyName: string;
+  network: string;
+  modelAccuracy: number;
+  maxDrawdown: number;
+  projApy: number;
+  status: string;
+}
+
+export interface StrategyArchetype {
+  id: string;
+  title: string;
+  iconName: string;
+  description: string;
+  status: string;
+  risk: string;
+  active?: boolean;
 }

@@ -11,7 +11,7 @@ import {
   Play,
   RotateCcw
 } from 'lucide-react';
-import { SimulationRun, StrategyArchetype, AlertItem } from '../types';
+import { SimulationRun, StrategyArchetype, AlertItem, LabsSuggestion } from '../types';
 
 interface StrategyProps {
   searchQuery: string;
@@ -19,6 +19,8 @@ interface StrategyProps {
   onRunSimulation: (id: string) => void;
   onExportCsv: () => void;
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
+  labsSuggestions?: LabsSuggestion[];
+  watchlist?: any[];
 }
 
 const ARCHETYPES: StrategyArchetype[] = [

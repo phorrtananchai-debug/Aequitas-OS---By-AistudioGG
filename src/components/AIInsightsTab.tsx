@@ -8,10 +8,13 @@ import {
   Workflow, 
   AlertCircle 
 } from 'lucide-react';
-import { ChatMessage, AlertItem } from '../types';
+import { ChatMessage, AlertItem, Holding, DailyBrief } from '../types';
 
 interface AIInsightsProps {
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
+  holdings?: Holding[];
+  dailyBrief?: DailyBrief;
+  aiImportStatus?: string | null;
 }
 
 const TEMPLATE_SUGGESTIONS = [
@@ -20,7 +23,7 @@ const TEMPLATE_SUGGESTIONS = [
   { text: 'How does compounding passive dividend reinvestments work here?', topic: 'dividends' },
 ];
 
-export default function AIInsightsTab({ onTriggerAlert }: AIInsightsProps) {
+export default function AIInsightsTab({ onTriggerAlert, holdings, dailyBrief, aiImportStatus }: AIInsightsProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'init',
