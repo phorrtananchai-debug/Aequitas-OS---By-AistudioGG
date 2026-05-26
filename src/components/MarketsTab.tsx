@@ -151,7 +151,7 @@ export default function MarketsTab({
     const totalSum = nextHoldings.reduce((sum, current) => sum + current.value, 0);
     const finalHoldings = nextHoldings.map(h => ({
       ...h,
-      allocationPct: parseFloat(((h.value / totalSum) * 105).toFixed(2))
+      allocationPct: parseFloat(((h.value / totalSum) * 100).toFixed(2))
     }));
 
     onUpdateHoldings(finalHoldings);

@@ -1,21 +1,41 @@
 import { useState } from 'react';
 import { Calendar, Layers, Clock, Plus, ArrowUpRight, CheckCircle2, ChevronRight, Play } from 'lucide-react';
+import { DcaPlan, Holding, AlertItem } from '../types';
 
-export default function DcaPlanTab() {
-  const [activeFrequency, setActiveFrequency] = useState<'Daily' | 'Weekly' | 'Monthly'>('Weekly');
-  const [totalContribution, setTotalContribution] = useState<number>(300);
+interface DcaPlanTabProps {
+  dcaPlan: DcaPlan;
+  onUpdateDcaPlan: (plan: DcaPlan) => void;
+  holdings: Holding[];
+  onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
+}
 
-  const dcaAssets = [
-    { name: 'Solana Stable Yields', ticker: 'SOL', percentage: 48, assetClass: 'Layer-1 Infrastructure', state: 'Active' },
-    { name: 'Bitcoin Digital Gold', ticker: 'BTC', percentage: 32, assetClass: 'Store of Value', state: 'Active' },
-    { name: 'Ethereum Consensus Core', ticker: 'ETH', percentage: 20, assetClass: 'Smart Contracts Platform', state: 'Active' },
-  ];
+export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTriggerAlert }: DcaPlanTabProps) {
+  const [activeFrequency, setActiveFrequency] = useState<string>('Monthly');
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  const handleContributionChange = (val: number) => {
+    onUpdateDcaPlan({
+      ...dcaPlan,
+      monthlyContributionPlan: val
+    });
+  };
+
+  const handleTriggerDca = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      onTriggerAlert({
+        type: 'success',
+        typeLabel: 'DCA EXECUTED',
+        title: 'Monthly Contribution Distributed',
+        description: `Successfully simulated the distribution of $${dcaPlan.monthlyContributionPlan.toLocaleString()} across target assets.`
+      });
+    }, 1500);
+  };
 
   const historicalContributions = [
-    { date: 'May 20, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
-    { date: 'May 13, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
-    { date: 'May 06, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
-    { date: 'Apr 29, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
+    { date: 'May 20, 2026', total: 5500.00, breakdown: 'VOO: $1500 | K-US500XRMF: $1200 | Others: $2800', status: 'COMPLETED' },
+    { date: 'April 20, 2026', total: 5500.00, breakdown: 'VOO: $1500 | K-US500XRMF: $1200 | Others: $2800', status: 'COMPLETED' },
   ];
 
   return (
@@ -68,15 +88,15 @@ export default function DcaPlanTab() {
               <div className="space-y-1.5 text-xs font-bold text-slate-655 shrink-0">
                 <div className="flex justify-between items-baseline">
                   <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Recurring Amount (USD)</label>
-                  <span className="font-mono text-blue-600 font-bold">${totalContribution} / period</span>
+                  <span className="font-mono text-blue-600 font-bold">${dcaPlan.monthlyContributionPlan.toLocaleString()} / period</span>
                 </div>
                 <input 
                   type="range"
-                  min="50"
-                  max="1000"
-                  step="25"
-                  value={totalContribution}
-                  onChange={(e) => setTotalContribution(parseInt(e.target.value))}
+                  min="500"
+                  max="10000"
+                  step="100"
+                  value={dcaPlan.monthlyContributionPlan}
+                  onChange={(e) => handleContributionChange(parseInt(e.target.value))}
                   className="accent-blue-600 h-1.5 w-full bg-slate-200 rounded-lg cursor-pointer"
                 />
               </div>
@@ -85,22 +105,22 @@ export default function DcaPlanTab() {
               <div className="space-y-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Core Splitting Ledger</span>
                 <div className="space-y-2.5">
-                  {dcaAssets.map((asset) => {
-                    const allocationValue = (totalContribution * asset.percentage) / 100;
+                  {dcaPlan.items.map((item) => {
+                    const holding = holdings.find(h => h.ticker === item.ticker);
                     return (
-                      <div key={asset.ticker} className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-905/30 border border-slate-100 dark:border-slate-805/5 rounded-xl text-xs font-sans">
+                      <div key={item.ticker} className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-905/30 border border-slate-100 dark:border-slate-805/5 rounded-xl text-xs font-sans">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-slate-800 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold tracking-wider">
-                            {asset.ticker}
+                            {item.ticker}
                           </div>
                           <div>
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{asset.name}</span>
-                            <span className="text-[10px] text-slate-400 block">{asset.assetClass}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{item.name || holding?.name || item.ticker}</span>
+                            <span className="text-[10px] text-slate-400 block">{holding?.type || 'Asset'}</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="font-mono font-bold text-slate-900 dark:text-white">${allocationValue.toFixed(2)}</span>
-                          <span className="text-[10px] text-slate-400 block font-mono">({asset.percentage}%)</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">${item.targetAmount.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">({((item.targetAmount / dcaPlan.monthlyContributionPlan) * 100).toFixed(1)}%)</span>
                         </div>
                       </div>
                     );
@@ -111,9 +131,13 @@ export default function DcaPlanTab() {
           </div>
 
           <div className="mt-8 pt-5 border-t border-slate-100 dark:border-slate-805/10 flex justify-between items-center bg-transparent">
-            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">DCA Node Trigger: sol-09</span>
-            <button className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
-              <span>View schedules</span>
+            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">DCA Node Trigger: active</span>
+            <button
+              onClick={handleTriggerDca}
+              disabled={isSyncing}
+              className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              <span>{isSyncing ? 'Executing...' : 'Run Manual Sweep Now'}</span>
               <ChevronRight size={14} />
             </button>
           </div>
@@ -127,13 +151,13 @@ export default function DcaPlanTab() {
                 PLAN SUMMARY
               </span>
               <h3 className="text-base font-bold mt-1 text-slate-900 dark:text-white">Execution Status</h3>
-              <p className="text-xs text-slate-450 mt-1">DCA status tracker.</p>
+              <p className="text-xs text-slate-455 mt-1">DCA status tracker.</p>
             </div>
 
             <div className="space-y-4">
               <div className="p-3 bg-slate-100/50 dark:bg-slate-900/35 rounded-xl space-y-1">
                 <span className="text-[9px] uppercase font-black text-slate-400 block tracking-widest">Next Scheduled Run</span>
-                <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">June 2, 2026</span>
+                <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">{dcaPlan.nextContributionReminder}</span>
                 <p className="text-[10px] text-slate-400 leading-normal mt-1">
                   Automatic withdrawal initiated at 00:00 UTC.
                 </p>

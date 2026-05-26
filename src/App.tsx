@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { migrateData, saveState } from './core/storage';
 import { 
   AlertItem, 
   TabType, 
@@ -12,7 +13,8 @@ import {
   ActivityItem, 
   ChatMessage, 
   ThaiFundNavState,
-  AiImportSchema
+  AiImportSchema,
+  MigrationStatus
 } from './types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -150,7 +152,13 @@ const INITIAL_LABS_SUGGESTIONS: LabsSuggestion[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabType>('portfolio');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path === '/os' || path === '/dashboard') return 'dashboard';
+    }
+    return 'portfolio';
+  });
   const [portfolioValue, setPortfolioValue] = useState<number>(485290.00);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [darkMode, setDarkMode] = useState<boolean>(false);
@@ -167,6 +175,7 @@ export default function App() {
   const [notifications, setNotifications] = useState<AlertItem[]>(INITIAL_NOTIFICATION_QUEUE);
   const [latestAiImportPlan, setLatestAiImportPlan] = useState<AiImportSchema | null>(null);
   const [aiImportStatus, setAiImportStatus] = useState<string>('Offline Schema Mode: Default core parameters preloaded.');
+  const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
 
   // Simulated Simulation model backups
   const [simulations, setSimulations] = useState<any[]>([
@@ -182,6 +191,52 @@ export default function App() {
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+
+  // 1. Initial Migration & State Load
+  useEffect(() => {
+    const { state, status, justMigrated } = migrateData();
+    if (state) {
+      if (state.holdings) setHoldings(state.holdings);
+      if (state.portfolioValue) setPortfolioValue(state.portfolioValue);
+      if (state.dcaPlan) setDcaPlan(state.dcaPlan);
+      if (state.dividendPlan) setDividendPlan(state.dividendPlan);
+      if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
+      if (state.watchlist) setWatchlist(state.watchlist);
+      if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
+    }
+    setMigrationStatus(status);
+
+    if (justMigrated) {
+      pushNotification({
+        type: 'success',
+        typeLabel: 'MIGRATION SUCCESS',
+        title: 'Legacy Aequitas workspace restored.',
+        description: 'Existing Aequitas data migrated into the new OS shell.'
+      });
+    }
+
+    // Handle initial route
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path === '/os' || path === '/dashboard') {
+        setActiveTab('dashboard');
+      }
+    }
+  }, []);
+
+  // 2. Persistent Storage Sync
+  useEffect(() => {
+    saveState({
+      holdings,
+      portfolioValue,
+      dcaPlan,
+      dividendPlan,
+      thaiFundNavs,
+      watchlist,
+      latestAiImportPlan,
+      migrationStatus: migrationStatus || undefined
+    });
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, thaiFundNavs, watchlist, latestAiImportPlan, migrationStatus]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -500,6 +555,7 @@ export default function App() {
               portfolioValue={portfolioValue}
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
+              migrationStatus={migrationStatus}
             />
           )}
 
