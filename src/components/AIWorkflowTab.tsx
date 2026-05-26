@@ -65,7 +65,7 @@ export default function AIWorkflowTab({
       avg_cost: h.avgCost,
       current_price: h.currentPrice,
       subtotal_value: h.value,
-      allocation_pct: h.allocationPct
+      percent: h.allocationPct
     })),
     monthly_dca_plan: {
       monthlyContributionPlan: dcaPlan.monthlyContributionPlan,
