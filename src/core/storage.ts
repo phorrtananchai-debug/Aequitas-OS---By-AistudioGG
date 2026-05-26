@@ -1,13 +1,7 @@
-import { MigrationStatus, Holding, DcaPlan, DividendPlan, ThaiFundNavState, WatchlistItem } from '../types';
+import { MigrationStatus, Holding, DcaPlan, DividendPlan, ThaiFundNavState, WatchlistItem, AiImportSchema } from '../types';
 
 const STORAGE_KEY = 'aequitas_os_state_v1';
 const BACKUP_PREFIX = 'aequitas_pre_migration_backup_';
-
-const OLD_KEYS = [
-  'aequitas', 'portfolio', 'holdings', 'allocation', 'dca',
-  'dividends', 'thai_nav', 'ai_strategy', 'ai_import',
-  'snapshot', 'watchlist', 'settings'
-];
 
 export interface AppState {
   holdings: Holding[];
@@ -17,6 +11,7 @@ export interface AppState {
   thaiFundNavs: ThaiFundNavState[];
   watchlist: WatchlistItem[];
   migrationStatus: MigrationStatus;
+  latestAiImportPlan: AiImportSchema | null;
 }
 
 export const migrateData = () => {
@@ -32,23 +27,29 @@ export const migrateData = () => {
     }
   }
 
-  // Check for old keys
+  // Check for all aequitas_* keys
   const oldData: any = {};
-  let foundOldData = false;
+  const detectedLegacyKeys: string[] = [];
 
-  OLD_KEYS.forEach(key => {
-    const val = localStorage.getItem(key);
-    if (val) {
-      try {
-        oldData[key] = JSON.parse(val);
-      } catch {
-        oldData[key] = val;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('aequitas_') || key === 'aequitas' || key === 'portfolio' || key === 'holdings' || key === 'allocation' || key === 'dca' || key === 'dividends' || key === 'thai_nav' || key === 'ai_strategy' || key === 'ai_import' || key === 'snapshot' || key === 'watchlist' || key === 'settings')) {
+      // Exclude our own new storage key and backups
+      if (key === STORAGE_KEY || key.startsWith(BACKUP_PREFIX)) continue;
+
+      const val = localStorage.getItem(key);
+      if (val) {
+        try {
+          oldData[key] = JSON.parse(val);
+        } catch {
+          oldData[key] = val;
+        }
+        detectedLegacyKeys.push(key);
       }
-      foundOldData = true;
     }
-  });
+  }
 
-  if (foundOldData) {
+  if (detectedLegacyKeys.length > 0) {
     // 1. Create Backup
     const timestamp = Date.now();
     try {
@@ -58,18 +59,21 @@ export const migrateData = () => {
     }
 
     // 2. Map old data to new schema
+    // Use the comprehensive list of keys provided in the task
     const newState: any = {
-      holdings: oldData.holdings || oldData.portfolio?.holdings || null,
-      dcaPlan: oldData.dca || oldData.dcaPlan || null,
-      dividendPlan: oldData.dividends || oldData.dividendPlan || null,
-      thaiFundNavs: oldData.thai_nav || oldData.thaiFundNavs || null,
-      watchlist: oldData.watchlist || null,
-      portfolioValue: oldData.portfolio?.totalValue || oldData.portfolioValue || null,
+      holdings: oldData.aequitas_portfolio?.holdings || oldData.holdings || oldData.portfolio?.holdings || null,
+      portfolioValue: oldData.aequitas_portfolio?.totalValue || oldData.portfolio?.totalValue || oldData.portfolioValue || null,
+      dividendPlan: oldData.aequitas_dividend_ledger || oldData.dividends || null,
+      watchlist: oldData.aequitas_watchlist || oldData.aequitas_watchlist_assets || oldData.watchlist || null,
+      latestAiImportPlan: oldData.aequitas_ai_trading_plan || oldData.ai_import || null,
+      // Add other mappings if necessary
     };
 
     const status: MigrationStatus = {
       source: 'old-local-storage',
       migratedAt: new Date().toISOString(),
+      detectedLegacyKeys,
+      success: true,
       warnings: []
     };
 

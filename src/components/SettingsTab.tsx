@@ -560,6 +560,12 @@ export default function SettingsTab({
                             <span className="font-bold text-emerald-600">Sync Active</span>
                           </div>
                         </div>
+                        {migrationStatus.detectedLegacyKeys && migrationStatus.detectedLegacyKeys.length > 0 && (
+                          <div className="mt-2">
+                            <span className="text-[9px] text-slate-400 block uppercase font-bold">Detected Legacy Keys</span>
+                            <p className="text-[9px] text-slate-500 font-mono break-all">{migrationStatus.detectedLegacyKeys.join(', ')}</p>
+                          </div>
+                        )}
                         {migrationStatus.warnings.length > 0 && (
                           <div className="mt-2 p-2 rounded bg-rose-50 dark:bg-rose-950/20 text-rose-600 text-[9px]">
                             {migrationStatus.warnings.join(', ')}

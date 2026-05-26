@@ -202,6 +202,7 @@ export default function App() {
       if (state.dividendPlan) setDividendPlan(state.dividendPlan);
       if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
       if (state.watchlist) setWatchlist(state.watchlist);
+      if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
     }
     setMigrationStatus(status);
 
@@ -209,7 +210,7 @@ export default function App() {
       pushNotification({
         type: 'success',
         typeLabel: 'MIGRATION SUCCESS',
-        title: 'Aequitas Data Restored',
+        title: 'Legacy Aequitas workspace restored.',
         description: 'Existing Aequitas data migrated into the new OS shell.'
       });
     }
@@ -232,9 +233,10 @@ export default function App() {
       dividendPlan,
       thaiFundNavs,
       watchlist,
+      latestAiImportPlan,
       migrationStatus: migrationStatus || undefined
     });
-  }, [holdings, portfolioValue, dcaPlan, dividendPlan, thaiFundNavs, watchlist, migrationStatus]);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, thaiFundNavs, watchlist, latestAiImportPlan, migrationStatus]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
