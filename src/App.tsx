@@ -450,6 +450,7 @@ export default function App() {
         toggleDarkMode={() => setDarkMode(!darkMode)}
         onClearNotification={handleClearNotif}
         onClearAllNotifications={handleClearAllNotifs}
+        migrationStatus={migrationStatus}
       />
 
       {/* 3. Main content body wrapper */}

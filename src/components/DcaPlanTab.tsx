@@ -16,9 +16,16 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   const handleContributionChange = (val: number) => {
+    const ratio = val / (dcaPlan.monthlyContributionPlan || 1);
+    const updatedItems = dcaPlan.items.map(item => ({
+      ...item,
+      targetAmount: Math.round(item.targetAmount * ratio)
+    }));
+
     onUpdateDcaPlan({
       ...dcaPlan,
-      monthlyContributionPlan: val
+      monthlyContributionPlan: val,
+      items: updatedItems
     });
   };
 
