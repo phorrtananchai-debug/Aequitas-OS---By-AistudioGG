@@ -1,5 +1,5 @@
 import React, { useState, FormEvent } from 'react';
-import { MigrationStatus } from '../types';
+import { MigrationStatus, FinancialSettings } from '../types';
 import { 
   Settings as SettingsIcon, 
   ShieldAlert, 
@@ -25,20 +25,24 @@ import {
   CircleDot
 } from 'lucide-react';
 
+type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs' | 'legacy';
+
 interface SettingsTabProps {
   portfolioValue: number;
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
   migrationStatus: MigrationStatus | null;
+  financialSettings: FinancialSettings;
+  onUpdateFinancialSettings: (settings: FinancialSettings) => void;
 }
-
-type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs';
 
 export default function SettingsTab({
   portfolioValue,
   onUpdatePortfolio,
   onTriggerAlert,
-  migrationStatus
+  migrationStatus,
+  financialSettings,
+  onUpdateFinancialSettings
 }: SettingsTabProps) {
   // Active settings tab category
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -50,7 +54,11 @@ export default function SettingsTab({
   const [motion, setMotion] = useState<'smooth' | 'reduced' | 'none'>('smooth');
 
   // Portfolio state
-  const [baseCurrency, setBaseCurrency] = useState<string>('USD');
+  const [baseCurrency, setBaseCurrency] = useState<string>(financialSettings.baseCurrency);
+  const [usdThbRate, setUsdThbRate] = useState<string>(financialSettings.usdThbRate.toString());
+  const [showThbTotals, setShowThbTotals] = useState<boolean>(financialSettings.showThbTotals);
+  const [preferThaiNav, setPreferThaiNav] = useState<boolean>(financialSettings.preferThaiNav);
+
   const [dividendPref, setDividendPref] = useState<string>('compound');
   const [dcaInterval, setDcaInterval] = useState<string>('weekly');
   const [ledgerVal, setLedgerVal] = useState<string>(portfolioValue.toString());
@@ -85,6 +93,14 @@ export default function SettingsTab({
       if (!isNaN(numericVal) && numericVal > 0) {
         onUpdatePortfolio(numericVal);
       }
+
+      onUpdateFinancialSettings({
+        baseCurrency,
+        usdThbRate: parseFloat(usdThbRate) || 36.45,
+        showThbTotals,
+        preferThaiNav
+      });
+
       setIsSaving(false);
       onTriggerAlert({
         type: 'success',
@@ -100,6 +116,7 @@ export default function SettingsTab({
     { id: 'portfolio' as SettingsSection, label: 'Portfolio Parameters', icon: Database, text: 'Base currencies & limits' },
     { id: 'aiServices' as SettingsSection, label: 'AI Services Layer', icon: Sparkles, text: 'Optional intelligence & APIs', tag: 'OPTIONAL' },
     { id: 'syncStorage' as SettingsSection, label: 'Sync & Local Storage', icon: FolderLock, text: 'Snapshot backup & encryption' },
+    { id: 'legacy' as SettingsSection, label: 'Legacy Data Vault', icon: Database, text: 'Old data & recovery audit', tag: 'RECOVERY' },
     { id: 'labs' as SettingsSection, label: 'Experimental Labs', icon: Wrench, text: 'Sandbox simulations', tag: 'LABS' },
   ];
 
@@ -253,6 +270,50 @@ export default function SettingsTab({
                           {opt}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* THB / FX Settings */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-655 block uppercase tracking-wider">USD/THB FX Rate</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={usdThbRate}
+                        onChange={(e) => setUsdThbRate(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 text-slate-950 dark:text-white rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="space-y-2 flex flex-col justify-center pt-4">
+                      <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                        <div>
+                          <span className="font-bold text-xs block text-slate-800 dark:text-slate-200">Show THB Totals</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowThbTotals(!showThbTotals)}
+                          className="text-blue-600"
+                        >
+                          {showThbTotals ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                      <div>
+                        <span className="font-bold text-xs block text-slate-800 dark:text-slate-200">Prefer Thai Fund NAV over Google Sheets</span>
+                        <span className="text-[10px] text-slate-400 block">Uses manually entered NAV from Thai Fund Sync tool.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPreferThaiNav(!preferThaiNav)}
+                        className="text-blue-600"
+                      >
+                        {preferThaiNav ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
+                      </button>
                     </div>
                   </div>
 
@@ -596,6 +657,82 @@ export default function SettingsTab({
                         {brokerFuture ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SECTION: LEGACY DATA RECOVERY */}
+              {activeSection === 'legacy' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800/15">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 block pb-1">Legacy Data Recovery & Continuity</span>
+                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Legacy Data Vault</h3>
+                  </div>
+
+                  <p className="text-slate-550 leading-relaxed text-[11px]">
+                    To maintain product continuity, Aequitas OS audits your local storage for legacy data. Below is the status of identified old data blocks. If data is unmapped to the new UI, you can view it here in raw JSON format.
+                  </p>
+
+                  <div className="space-y-4">
+                    {/* Migration Summary */}
+                    {migrationStatus && (
+                      <div className="p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-900/10 border border-blue-100/30 dark:border-slate-800/10 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">Migration Summary</span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {migrationStatus.migratedAt ? `Migrated on ${new Date(migrationStatus.migratedAt).toLocaleDateString()}` : 'No migration record'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-2">
+                          {migrationStatus.detectedLegacyKeys?.map(key => {
+                            const isMapped = ![
+                              'aequitas_portfolio', 'portfolio', 'holdings',
+                              'aequitas_dca_plan', 'aequitas_dca', 'dca',
+                              'aequitas_dividend_ledger', 'dividends',
+                              'aequitas_trade_journal', 'activity', 'activities',
+                              'aequitas_thai_nav', 'thai_nav', 'thai_nav_state',
+                              'aequitas_watchlist', 'aequitas_watchlist_assets', 'watchlist',
+                              'aequitas_ai_trading_plan', 'ai_import',
+                              'aequitas_settings', 'settings',
+                              'aequitas_usd_thb_rate'
+                            ].includes(key);
+
+                            return (
+                              <div key={key} className="flex items-center justify-between text-[11px] py-1 border-b border-slate-100/50 dark:border-slate-800/5">
+                                <span className="font-mono text-slate-600 dark:text-slate-400">{key}</span>
+                                <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] uppercase ${
+                                  !isMapped ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                }`}>
+                                  {!isMapped ? 'Successfully Mapped' : 'Unmapped / Safe Vault'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                          {(!migrationStatus.detectedLegacyKeys || migrationStatus.detectedLegacyKeys.length === 0) && (
+                            <p className="text-center text-slate-400 py-4 italic">No legacy aequitas_* keys detected in local storage.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Unmapped Data Vault */}
+                    {migrationStatus?.unmappedLegacyData && Object.keys(migrationStatus.unmappedLegacyData).length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-center gap-2 text-amber-600">
+                          <FolderLock size={16} />
+                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">Unmapped Data Vault (Read-Only)</span>
+                        </div>
+                        <div className="bg-slate-950 rounded-xl p-4 overflow-hidden border border-slate-800">
+                          <pre className="text-[10px] text-amber-400 font-mono overflow-auto max-h-60 leading-relaxed scrollbar-thin">
+                            {JSON.stringify(migrationStatus.unmappedLegacyData, null, 2)}
+                          </pre>
+                        </div>
+                        <p className="text-[10px] text-slate-400 italic">
+                          This data is stored safely but currently has no direct UI representation in the new Luminous Shell.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

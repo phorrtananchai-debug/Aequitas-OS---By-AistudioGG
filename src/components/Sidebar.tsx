@@ -10,6 +10,7 @@ import {
   PieChart,
   Coins,
   Calendar,
+  Gauge,
   Sparkles,
   Beaker,
   RefreshCw,
@@ -22,7 +23,8 @@ import {
   Camera,
   Workflow
 } from 'lucide-react';
-import { TabType } from '../types';
+import { TabType, FinancialSettings } from '../types';
+import { formatCurrency } from '../core/utils';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -32,6 +34,7 @@ interface SidebarProps {
   onOpenSupport: () => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
   portfolioValue: number;
+  financialSettings: FinancialSettings;
 }
 
 export default function Sidebar({
@@ -41,7 +44,8 @@ export default function Sidebar({
   onOpenSettings,
   onOpenSupport,
   onTriggerAlert,
-  portfolioValue
+  portfolioValue,
+  financialSettings
 }: SidebarProps) {
   // Popover States
   const [hoveredTab, setHoveredTab] = useState<string | null>(null);
@@ -71,6 +75,8 @@ export default function Sidebar({
         { id: 'allocation' as TabType, label: 'Allocation', icon: PieChart, popup: 'allocation' },
         { id: 'dividends' as TabType, label: 'Dividends', icon: Coins, popup: 'dividends' },
         { id: 'dcaPlan' as TabType, label: 'DCA Plan', icon: Calendar, popup: null },
+        { id: 'watchlist' as TabType, label: 'Watchlist', icon: Gauge, popup: null },
+        { id: 'activity' as TabType, label: 'Activity Log', icon: Newspaper, popup: null },
       ]
     },
     {
@@ -229,7 +235,7 @@ export default function Sidebar({
                             <div className="space-y-2">
                               <div>
                                 <span className="text-[9px] text-slate-400 uppercase font-bold block">Current balance</span>
-                                <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-50">${portfolioValue.toLocaleString()}</span>
+                                <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-50">{formatCurrency(portfolioValue, financialSettings)}</span>
                               </div>
                               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800/10 text-[11px] space-y-1 leading-normal font-sans">
                                 <div className="flex justify-between">
@@ -282,14 +288,14 @@ export default function Sidebar({
                             <div className="space-y-2 text-xs">
                               <div className="flex justify-between py-1 border-b border-slate-100/50 dark:border-slate-800/10">
                                 <span className="text-slate-450">Expected Monthly</span>
-                                <span className="font-mono font-bold text-slate-900 dark:text-white">$3,150.00</span>
+                                <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(3150, financialSettings)}</span>
                               </div>
                               <div className="flex justify-between py-1 border-b border-slate-100/50 dark:border-slate-800/10">
                                 <span className="text-slate-455">Direct Target APY</span>
                                 <span className="font-mono font-bold text-emerald-600">7.20% Core APY</span>
                               </div>
                               <p className="text-[10px] text-slate-400 leading-normal mt-2 font-sans">
-                                Upcoming payout: <strong className="text-slate-600 dark:text-slate-350">$420.00 SCHD Yield</strong> scheduled for Jun 1 deposition.
+                                Upcoming payout: <strong className="text-slate-600 dark:text-slate-350">{formatCurrency(420, financialSettings)} SCHD Yield</strong> scheduled for Jun 1 deposition.
                               </p>
                             </div>
                           </div>

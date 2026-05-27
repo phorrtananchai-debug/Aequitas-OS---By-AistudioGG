@@ -1,12 +1,22 @@
 import { useState } from 'react';
 import { Coins, TrendingUp, Calendar, Check, ArrowUpRight, Percent, Info } from 'lucide-react';
+import { Holding, DividendPlan, FinancialSettings } from '../types';
+import { calculateDividendStats, formatCurrency } from '../core/utils';
 
-export default function DividendsTab() {
+interface DividendsTabProps {
+  dividendPlan: DividendPlan;
+  onUpdateDividendPlan: (plan: DividendPlan) => void;
+  holdings: Holding[];
+  financialSettings: FinancialSettings;
+}
+
+export default function DividendsTab({ dividendPlan, holdings, financialSettings }: DividendsTabProps) {
   const [compoundYears, setCompoundYears] = useState<number>(5);
   const [monthlyContribution, setMonthlyContribution] = useState<number>(1500);
 
-  const initialPrincipal = 485000;
-  const annualApy = 0.072; // 7.2% average apy
+  const dividendStats = calculateDividendStats(holdings);
+  const initialPrincipal = holdings.reduce((acc, h) => acc + h.value, 0);
+  const annualApy = dividendStats.weightedApy / 100;
 
   // Calculate compound interest
   // A = P(1 + r/n)^(nt) + PMT * (((1 + r/n)^(nt) - 1) / (r/n)) * (1 + r/n) (assuming payments at start of period)
@@ -49,7 +59,7 @@ export default function DividendsTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Monthly Yield Est.</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">$3,150.00</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{formatCurrency(dividendStats.monthlyEst, financialSettings)}</span>
           <p className="text-[10px] text-emerald-600 font-bold uppercase mt-2 flex items-center gap-0.5">
             <ArrowUpRight size={10} /> +4.2% from last cycle
           </p>
@@ -57,13 +67,13 @@ export default function DividendsTab() {
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Weighted System APY</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">7.20%</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{dividendStats.weightedApy.toFixed(2)}%</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Compounding active</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Upcoming Payout Scheduled</span>
-          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">$1,450.00</span>
+          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{formatCurrency(dividendStats.annualEst / 12, financialSettings)}</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 flex items-center gap-1">
             <Calendar size={10} /> June 1, 2026
           </p>
@@ -93,7 +103,7 @@ export default function DividendsTab() {
                 <tr key={event.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                   <td className="px-6 py-4 font-mono font-bold text-slate-400">{event.id}</td>
                   <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{event.source}</td>
-                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${event.amount.toFixed(2)}</td>
+                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(event.amount, financialSettings)}</td>
                   <td className="px-6 py-4 text-slate-500">{event.frequency}</td>
                   <td className="px-6 py-4 text-slate-500">{event.estimateDate}</td>
                   <td className="px-6 py-4 text-right">
@@ -144,7 +154,7 @@ export default function DividendsTab() {
               <div className="space-y-1.5 text-xs font-bold text-slate-655 shrink-0">
                 <div className="flex justify-between items-baseline">
                   <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Estimated Monthly DCA Contribution (USD)</label>
-                  <span className="font-mono text-blue-600 font-bold">${monthlyContribution.toLocaleString()} / mo</span>
+                  <span className="font-mono text-blue-600 font-bold">{formatCurrency(monthlyContribution, financialSettings)} / mo</span>
                 </div>
                 <input 
                   type="range"
@@ -162,10 +172,10 @@ export default function DividendsTab() {
           <div className="mt-8 p-5 bg-blue-50/20 dark:bg-slate-900/10 border border-blue-105/20 dark:border-slate-800/10 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
             <div>
               <span className="text-[9px] text-slate-400 uppercase font-black block tracking-widest">Projected Core Value ({compoundYears}yr)</span>
-              <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">${calculateEstimate().toLocaleString()}</span>
+              <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">{formatCurrency(calculateEstimate(), financialSettings)}</span>
             </div>
             <div className="text-[11px] text-slate-400 font-medium text-left sm:text-right max-w-sm">
-              Includes initial core balance of <strong className="text-slate-600 dark:text-slate-350">$485,000</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">7.20% APY</strong>.
+              Includes initial core balance of <strong className="text-slate-600 dark:text-slate-350">{formatCurrency(initialPrincipal, financialSettings)}</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">{(annualApy * 100).toFixed(2)}% APY</strong>.
             </div>
           </div>
         </div>

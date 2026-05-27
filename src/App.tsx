@@ -14,12 +14,14 @@ import {
   ChatMessage, 
   ThaiFundNavState,
   AiImportSchema,
-  MigrationStatus
+  MigrationStatus,
+  FinancialSettings
 } from './types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import OverviewTab from './components/OverviewTab';
 import PortfolioTab from './components/PortfolioTab';
+import { calculatePortfolioDrift } from './core/utils';
 import StrategyTab from './components/StrategyTab'; // Used for Labs
 import MarketsTab from './components/MarketsTab'; // Refactored to Holdings
 import AIInsightsTab from './components/AIInsightsTab'; // AI Advisor Workspace
@@ -34,6 +36,7 @@ import AllocationTab from './components/AllocationTab';
 import SettingsTab from './components/SettingsTab';
 import AIWorkflowTab from './components/AIWorkflowTab';
 import SnapshotsTab from './components/SnapshotsTab';
+import WatchlistTab from './components/WatchlistTab';
 
 // Initial Mock Datasets
 const INITIAL_NOTIFICATION_QUEUE: AlertItem[] = [
@@ -176,6 +179,12 @@ export default function App() {
   const [latestAiImportPlan, setLatestAiImportPlan] = useState<AiImportSchema | null>(null);
   const [aiImportStatus, setAiImportStatus] = useState<string>('Offline Schema Mode: Default core parameters preloaded.');
   const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
+  const [financialSettings, setFinancialSettings] = useState<FinancialSettings>({
+    baseCurrency: 'USD',
+    usdThbRate: 36.45,
+    showThbTotals: true,
+    preferThaiNav: true
+  });
 
   // Simulated Simulation model backups
   const [simulations, setSimulations] = useState<any[]>([
@@ -196,13 +205,15 @@ export default function App() {
   useEffect(() => {
     const { state, status, justMigrated } = migrateData();
     if (state) {
-      if (state.holdings) setHoldings(state.holdings);
+      if (state.holdings && state.holdings.length > 0) setHoldings(state.holdings);
       if (state.portfolioValue) setPortfolioValue(state.portfolioValue);
       if (state.dcaPlan) setDcaPlan(state.dcaPlan);
       if (state.dividendPlan) setDividendPlan(state.dividendPlan);
+      if (state.activities && state.activities.length > 0) setActivities(state.activities);
       if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
-      if (state.watchlist) setWatchlist(state.watchlist);
+      if (state.watchlist && state.watchlist.length > 0) setWatchlist(state.watchlist);
       if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
+      if (state.financialSettings) setFinancialSettings(state.financialSettings);
     }
     setMigrationStatus(status);
 
@@ -231,12 +242,14 @@ export default function App() {
       portfolioValue,
       dcaPlan,
       dividendPlan,
+      activities,
       thaiFundNavs,
       watchlist,
       latestAiImportPlan,
+      financialSettings,
       migrationStatus: migrationStatus || undefined
     });
-  }, [holdings, portfolioValue, dcaPlan, dividendPlan, thaiFundNavs, watchlist, latestAiImportPlan, migrationStatus]);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, latestAiImportPlan, financialSettings, migrationStatus]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -421,6 +434,7 @@ export default function App() {
         onOpenSupport={() => setSupportModalOpen(true)}
         onTriggerAlert={pushNotification}
         portfolioValue={portfolioValue}
+        financialSettings={financialSettings}
       />
 
       {/* 2. Top Navigation header */}
@@ -444,11 +458,13 @@ export default function App() {
               portfolioValue={portfolioValue} 
               setActiveTab={setActiveTab}
               healthScore={latestAiImportPlan?.portfolioSummary?.portfolioHealth ?? 94.8}
-              driftPct={latestAiImportPlan?.portfolioSummary?.allocationDriftPct ?? 3.2}
+              driftPct={calculatePortfolioDrift(holdings)}
               dailyBrief={dailyBrief}
               dcaTarget={dcaPlan.monthlyContributionPlan}
               cashAvailable={dcaPlan.items.find(x => x.ticker === 'CASH')?.targetAmount ?? 8690}
               dividendMonthly={dividendPlan.expectedMonthlyDividend}
+              holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -456,6 +472,8 @@ export default function App() {
             <DailyBriefTab 
               portfolioValue={portfolioValue}
               dailyBrief={dailyBrief}
+              holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -465,6 +483,7 @@ export default function App() {
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -476,6 +495,7 @@ export default function App() {
               onUpdateHoldings={setHoldings}
               thaiFundNavs={thaiFundNavs}
               onUpdateThaiFundNavs={setThaiFundNavs}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -484,6 +504,7 @@ export default function App() {
               onTriggerAlert={pushNotification}
               holdings={holdings}
               latestAiImportPlan={latestAiImportPlan}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -492,6 +513,7 @@ export default function App() {
               dividendPlan={dividendPlan}
               onUpdateDividendPlan={setDividendPlan}
               holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -501,6 +523,7 @@ export default function App() {
               onUpdateDcaPlan={setDcaPlan}
               holdings={holdings}
               onTriggerAlert={pushNotification}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -550,12 +573,21 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'watchlist' && (
+            <WatchlistTab
+              watchlist={watchlist}
+              onTriggerAlert={pushNotification}
+            />
+          )}
+
           {activeTab === 'settings' && (
             <SettingsTab 
               portfolioValue={portfolioValue}
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               migrationStatus={migrationStatus}
+              financialSettings={financialSettings}
+              onUpdateFinancialSettings={setFinancialSettings}
             />
           )}
 
