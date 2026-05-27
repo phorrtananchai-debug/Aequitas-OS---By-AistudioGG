@@ -22,7 +22,8 @@ import {
   ToggleLeft,
   ToggleRight,
   ChevronRight,
-  CircleDot
+  CircleDot,
+  Zap
 } from 'lucide-react';
 
 type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs' | 'legacy';
@@ -34,6 +35,8 @@ interface SettingsTabProps {
   migrationStatus: MigrationStatus | null;
   financialSettings: FinancialSettings;
   onUpdateFinancialSettings: (settings: FinancialSettings) => void;
+  onImportLegacyToCloud?: () => void;
+  workspaceMode: 'cloud' | 'local' | 'demo';
 }
 
 export default function SettingsTab({
@@ -42,7 +45,9 @@ export default function SettingsTab({
   onTriggerAlert,
   migrationStatus,
   financialSettings,
-  onUpdateFinancialSettings
+  onUpdateFinancialSettings,
+  onImportLegacyToCloud,
+  workspaceMode
 }: SettingsTabProps) {
   // Active settings tab category
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -669,14 +674,26 @@ export default function SettingsTab({
                       <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 block pb-1">Legacy Data Recovery & Continuity</span>
                       <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Migration Coverage Audit</h3>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => window.location.reload()}
-                      className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-all"
-                    >
-                      <RefreshCw size={12} />
-                      Rescan Storage
-                    </button>
+                    <div className="flex gap-2">
+                      {workspaceMode === 'cloud' && migrationStatus?.detectedLegacyKeys && migrationStatus.detectedLegacyKeys.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={onImportLegacyToCloud}
+                          className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 transition-all"
+                        >
+                          <Zap size={12} />
+                          Import to Cloud
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-all"
+                      >
+                        <RefreshCw size={12} />
+                        Rescan Storage
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-slate-550 leading-relaxed text-[11px]">
