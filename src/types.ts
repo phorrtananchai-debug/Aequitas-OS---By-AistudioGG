@@ -253,6 +253,7 @@ export interface MigrationStatus {
   source: 'old-local-storage' | 'new-state' | 'sample-state';
   migratedAt: string | null;
   detectedLegacyKeys?: string[];
+  unmappedLegacyData?: Record<string, any>;
   success?: boolean;
   warnings: string[];
 }

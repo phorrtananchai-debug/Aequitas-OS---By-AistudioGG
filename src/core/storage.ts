@@ -1,4 +1,4 @@
-import { MigrationStatus, Holding, DcaPlan, DividendPlan, ThaiFundNavState, WatchlistItem, AiImportSchema, FinancialSettings } from '../types';
+import { MigrationStatus, Holding, DcaPlan, DividendPlan, ThaiFundNavState, WatchlistItem, AiImportSchema, FinancialSettings, ActivityItem } from '../types';
 
 const STORAGE_KEY = 'aequitas_os_state_v1';
 const BACKUP_PREFIX = 'aequitas_pre_migration_backup_';
@@ -8,6 +8,7 @@ export interface AppState {
   portfolioValue: number;
   dcaPlan: DcaPlan;
   dividendPlan: DividendPlan;
+  activities: ActivityItem[];
   thaiFundNavs: ThaiFundNavState[];
   watchlist: WatchlistItem[];
   migrationStatus: MigrationStatus;
@@ -66,16 +67,37 @@ export const migrateData = () => {
       portfolioValue: Number(oldData.aequitas_portfolio?.totalValue || oldData.portfolio?.totalValue || oldData.portfolioValue || 0) || null,
       dcaPlan: oldData.aequitas_dca_plan || oldData.dca || oldData.aequitas_dca || null,
       dividendPlan: oldData.aequitas_dividend_ledger || oldData.dividends || null,
+      activities: oldData.aequitas_trade_journal || oldData.activity || oldData.activities || null,
       thaiFundNavs: oldData.aequitas_thai_nav || oldData.thai_nav || oldData.thai_nav_state || null,
       watchlist: oldData.aequitas_watchlist || oldData.aequitas_watchlist_assets || oldData.watchlist || null,
       latestAiImportPlan: oldData.aequitas_ai_trading_plan || oldData.ai_import || null,
       financialSettings: {
-        baseCurrency: oldData.settings?.baseCurrency || 'USD',
-        usdThbRate: Number(oldData.aequitas_usd_thb_rate || oldData.settings?.usdThbRate || 36.45),
-        showThbTotals: oldData.settings?.showThbTotals ?? true,
-        preferThaiNav: oldData.settings?.preferThaiNav ?? true
+        baseCurrency: oldData.aequitas_settings?.baseCurrency || oldData.settings?.baseCurrency || 'USD',
+        usdThbRate: Number(oldData.aequitas_usd_thb_rate || oldData.aequitas_settings?.usdThbRate || oldData.settings?.usdThbRate || 36.45),
+        showThbTotals: oldData.aequitas_settings?.showThbTotals ?? oldData.settings?.showThbTotals ?? true,
+        preferThaiNav: oldData.aequitas_settings?.preferThaiNav ?? oldData.settings?.preferThaiNav ?? true
       }
     };
+
+    // 3. Identify unmapped data
+    const mappedKeys = [
+      'aequitas_portfolio', 'portfolio', 'holdings',
+      'aequitas_dca_plan', 'aequitas_dca', 'dca',
+      'aequitas_dividend_ledger', 'dividends',
+      'aequitas_trade_journal', 'activity', 'activities',
+      'aequitas_thai_nav', 'thai_nav', 'thai_nav_state',
+      'aequitas_watchlist', 'aequitas_watchlist_assets', 'watchlist',
+      'aequitas_ai_trading_plan', 'ai_import',
+      'aequitas_settings', 'settings',
+      'aequitas_usd_thb_rate'
+    ];
+
+    const unmappedLegacyData: Record<string, any> = {};
+    detectedLegacyKeys.forEach(key => {
+      if (!mappedKeys.includes(key)) {
+        unmappedLegacyData[key] = oldData[key];
+      }
+    });
 
     // Derived fallback if portfolioValue is missing or 0 but holdings exist
     if ((!newState.portfolioValue || newState.portfolioValue === 0) && newState.holdings?.length > 0) {
@@ -93,6 +115,7 @@ export const migrateData = () => {
       source: 'old-local-storage',
       migratedAt: new Date().toISOString(),
       detectedLegacyKeys,
+      unmappedLegacyData,
       success: true,
       warnings: []
     };

@@ -10,6 +10,7 @@ import {
   PieChart,
   Coins,
   Calendar,
+  Gauge,
   Sparkles,
   Beaker,
   RefreshCw,
@@ -74,6 +75,8 @@ export default function Sidebar({
         { id: 'allocation' as TabType, label: 'Allocation', icon: PieChart, popup: 'allocation' },
         { id: 'dividends' as TabType, label: 'Dividends', icon: Coins, popup: 'dividends' },
         { id: 'dcaPlan' as TabType, label: 'DCA Plan', icon: Calendar, popup: null },
+        { id: 'watchlist' as TabType, label: 'Watchlist', icon: Gauge, popup: null },
+        { id: 'activity' as TabType, label: 'Activity Log', icon: Newspaper, popup: null },
       ]
     },
     {

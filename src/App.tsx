@@ -36,6 +36,7 @@ import AllocationTab from './components/AllocationTab';
 import SettingsTab from './components/SettingsTab';
 import AIWorkflowTab from './components/AIWorkflowTab';
 import SnapshotsTab from './components/SnapshotsTab';
+import WatchlistTab from './components/WatchlistTab';
 
 // Initial Mock Datasets
 const INITIAL_NOTIFICATION_QUEUE: AlertItem[] = [
@@ -204,12 +205,13 @@ export default function App() {
   useEffect(() => {
     const { state, status, justMigrated } = migrateData();
     if (state) {
-      if (state.holdings) setHoldings(state.holdings);
+      if (state.holdings && state.holdings.length > 0) setHoldings(state.holdings);
       if (state.portfolioValue) setPortfolioValue(state.portfolioValue);
       if (state.dcaPlan) setDcaPlan(state.dcaPlan);
       if (state.dividendPlan) setDividendPlan(state.dividendPlan);
+      if (state.activities && state.activities.length > 0) setActivities(state.activities);
       if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
-      if (state.watchlist) setWatchlist(state.watchlist);
+      if (state.watchlist && state.watchlist.length > 0) setWatchlist(state.watchlist);
       if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
       if (state.financialSettings) setFinancialSettings(state.financialSettings);
     }
@@ -240,13 +242,14 @@ export default function App() {
       portfolioValue,
       dcaPlan,
       dividendPlan,
+      activities,
       thaiFundNavs,
       watchlist,
       latestAiImportPlan,
       financialSettings,
       migrationStatus: migrationStatus || undefined
     });
-  }, [holdings, portfolioValue, dcaPlan, dividendPlan, thaiFundNavs, watchlist, latestAiImportPlan, financialSettings, migrationStatus]);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, latestAiImportPlan, financialSettings, migrationStatus]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -567,6 +570,13 @@ export default function App() {
               onTriggerAlert={pushNotification}
               labsSuggestions={labsSuggestions}
               watchlist={watchlist}
+            />
+          )}
+
+          {activeTab === 'watchlist' && (
+            <WatchlistTab
+              watchlist={watchlist}
+              onTriggerAlert={pushNotification}
             />
           )}
 
