@@ -23,24 +23,67 @@ export interface AppState {
 }
 
 export const fetchStateFromFirestore = async (uid: string): Promise<Partial<AppState> | null> => {
-  try {
-    const docRef = doc(db, 'users', uid, 'aequitas', 'state');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return docSnap.data() as Partial<AppState>;
+  const discoveryPaths = [
+    ['users', uid, 'aequitas', 'state'],
+    ['users', uid],
+    ['aequitas', uid],
+    ['workspaces', uid],
+    ['portfolios', uid]
+  ];
+
+  console.log(`[Aequitas OS] Starting Cloud Discovery for UID: ${uid}`);
+
+  for (const pathSegments of discoveryPaths) {
+    try {
+      const path = pathSegments.join('/');
+      console.log(`[Aequitas OS] Probing path: ${path}`);
+      const docRef = doc(db, pathSegments[0], ...pathSegments.slice(1));
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data() as Partial<AppState>;
+        const holdingsCount = data.holdings?.length || 0;
+        console.log(`[Aequitas OS] Found document at ${path}. Holdings count: ${holdingsCount}`);
+
+        if (holdingsCount > 0 || (data as any).portfolioValue > 0) {
+          console.log(`[Aequitas OS] Cloud Discovery SUCCESS at ${path}`);
+          return data;
+        } else {
+          console.log(`[Aequitas OS] Document at ${path} is empty. Continuing search...`);
+        }
+      }
+    } catch (error) {
+      console.error(`[Aequitas OS] Error probing path ${pathSegments.join('/')}:`, error);
     }
-  } catch (error) {
-    console.error("Error fetching from Firestore:", error);
   }
+
+  console.log(`[Aequitas OS] Cloud Discovery completed. No non-empty state found.`);
   return null;
 };
 
 export const saveStateToFirestore = async (uid: string, state: Partial<AppState>) => {
   try {
+    // Safety Check: Don't overwrite with empty state if cloud already has data
+    const holdingsCount = state.holdings?.length || 0;
+    const portfolioValue = Number(state.portfolioValue || 0);
+
+    if (holdingsCount === 0 && portfolioValue === 0) {
+      const docRef = doc(db, 'users', uid, 'aequitas', 'state');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const cloudData = docSnap.data();
+        if ((cloudData.holdings?.length || 0) > 0) {
+          console.warn("[Aequitas OS] Blocked sync: Local state is empty, but non-empty Cloud state exists. Preventing overwrite.");
+          return;
+        }
+      }
+    }
+
     const docRef = doc(db, 'users', uid, 'aequitas', 'state');
     await setDoc(docRef, state, { merge: true });
+    console.log("[Aequitas OS] Cloud Sync SUCCESS");
   } catch (error) {
-    console.error("Error saving to Firestore:", error);
+    console.error("[Aequitas OS] Error saving to Firestore:", error);
   }
 };
 

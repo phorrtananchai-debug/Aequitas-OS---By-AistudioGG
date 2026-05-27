@@ -16,6 +16,7 @@ import {
   Laptop,
   CheckCircle2,
   FolderLock,
+  Search,
   Workflow,
   Wrench,
   HelpCircle,
@@ -36,6 +37,7 @@ interface SettingsTabProps {
   financialSettings: FinancialSettings;
   onUpdateFinancialSettings: (settings: FinancialSettings) => void;
   onImportLegacyToCloud?: () => void;
+  onDiscoverCloudData?: () => void;
   workspaceMode: 'cloud' | 'local' | 'demo';
 }
 
@@ -47,6 +49,7 @@ export default function SettingsTab({
   financialSettings,
   onUpdateFinancialSettings,
   onImportLegacyToCloud,
+  onDiscoverCloudData,
   workspaceMode
 }: SettingsTabProps) {
   // Active settings tab category
@@ -585,6 +588,27 @@ export default function SettingsTab({
                       </div>
                       <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[9px] font-bold rounded-full border border-emerald-100 uppercase">ACTIVE COHERENCE</span>
                     </div>
+
+                    {/* Cloud Discovery Option */}
+                    {workspaceMode === 'cloud' && (
+                      <div className="flex justify-between items-center bg-blue-50/20 dark:bg-blue-950/10 p-3.5 border border-blue-100/30 dark:border-blue-900/20 rounded-2xl">
+                        <div>
+                          <span className="font-bold text-slate-900 dark:text-white block flex items-center gap-1.5">
+                            <Sparkles size={14} className="text-blue-600" />
+                            Deep Cloud Discovery
+                          </span>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">Search for existing portfolios across legacy Firestore paths.</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={onDiscoverCloudData}
+                          className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-all active:scale-95"
+                        >
+                          <Search size={12} />
+                          Discover
+                        </button>
+                      </div>
+                    )}
 
                     {/* Google Drive sync Option */}
                     <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
