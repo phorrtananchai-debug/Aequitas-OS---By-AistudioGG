@@ -10,14 +10,18 @@ import {
   Clock,
   ShieldAlert
 } from 'lucide-react';
-import { DailyBrief } from '../types';
+import { DailyBrief, Holding } from '../types';
+import { calculateLayerStats, calculatePortfolioDrift } from '../core/utils';
 
 interface DailyBriefProps {
   portfolioValue: number;
   dailyBrief: DailyBrief;
+  holdings: Holding[];
 }
 
-export default function DailyBriefTab({ portfolioValue, dailyBrief }: DailyBriefProps) {
+export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings }: DailyBriefProps) {
+  const layerStats = calculateLayerStats(holdings);
+  const drift = calculatePortfolioDrift(holdings);
   const today = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -71,19 +75,19 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief }: DailyBrief
                 <div className="space-y-2 font-sans">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Core S&P 500 ETF Layers</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">31.7%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.core.pct}%</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Growth Equities Layer</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">44.3%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.growth.pct}%</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Thai Fund Tax Wrapper</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">12.4%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.tax.pct}%</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Behavior Dividend Layer</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">8.5%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.dividend.pct}%</span>
                   </div>
                 </div>
               </div>
@@ -93,7 +97,7 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief }: DailyBrief
                 <div className="space-y-2 font-sans">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Overall Drift Marker</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">3.2% (Tolerable)</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{drift}% {drift <= 3.5 ? '(Tolerable)' : '(Action Needed)'}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-550 font-medium">Tax Wrapper Efficiency</span>

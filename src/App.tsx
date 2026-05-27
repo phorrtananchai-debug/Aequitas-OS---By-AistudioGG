@@ -20,6 +20,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import OverviewTab from './components/OverviewTab';
 import PortfolioTab from './components/PortfolioTab';
+import { calculatePortfolioDrift } from './core/utils';
 import StrategyTab from './components/StrategyTab'; // Used for Labs
 import MarketsTab from './components/MarketsTab'; // Refactored to Holdings
 import AIInsightsTab from './components/AIInsightsTab'; // AI Advisor Workspace
@@ -444,11 +445,12 @@ export default function App() {
               portfolioValue={portfolioValue} 
               setActiveTab={setActiveTab}
               healthScore={latestAiImportPlan?.portfolioSummary?.portfolioHealth ?? 94.8}
-              driftPct={latestAiImportPlan?.portfolioSummary?.allocationDriftPct ?? 3.2}
+              driftPct={calculatePortfolioDrift(holdings)}
               dailyBrief={dailyBrief}
               dcaTarget={dcaPlan.monthlyContributionPlan}
               cashAvailable={dcaPlan.items.find(x => x.ticker === 'CASH')?.targetAmount ?? 8690}
               dividendMonthly={dividendPlan.expectedMonthlyDividend}
+              holdings={holdings}
             />
           )}
 
@@ -456,6 +458,7 @@ export default function App() {
             <DailyBriefTab 
               portfolioValue={portfolioValue}
               dailyBrief={dailyBrief}
+              holdings={holdings}
             />
           )}
 

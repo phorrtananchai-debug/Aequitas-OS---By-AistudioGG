@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sliders, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Holding, AiImportSchema } from '../types';
+import { calculatePortfolioDrift } from '../core/utils';
 
 interface AllocationTabProps {
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
@@ -11,6 +12,8 @@ interface AllocationTabProps {
 export default function AllocationTab({ onTriggerAlert, holdings, latestAiImportPlan }: AllocationTabProps) {
   const [driftTolerance, setDriftTolerance] = useState<number>(3.5);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  const drift = holdings ? calculatePortfolioDrift(holdings) : 3.2;
 
   // Sum current values for each layer:
   const totalVal = holdings?.reduce((acc, h) => acc + h.value, 0) || 485290;
@@ -77,14 +80,14 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Total Alignment Index</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">99.8%</span>
-          <p className="text-[10px] text-emerald-600 font-bold uppercase mt-2">Highly coherent</p>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.max(0, 100 - drift).toFixed(1)}%</span>
+          <p className="text-[10px] text-emerald-600 font-bold uppercase mt-2">{drift <= 3.5 ? 'Highly coherent' : 'Drift detected'}</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Weighted Capital Drift</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">3.2%</span>
-          <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Below trigger threshold</p>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{drift}%</span>
+          <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">{drift <= driftTolerance ? 'Below trigger threshold' : 'Breached safety bound'}</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">

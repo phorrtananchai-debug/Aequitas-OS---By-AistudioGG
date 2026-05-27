@@ -62,12 +62,25 @@ export const migrateData = () => {
     // Use the comprehensive list of keys provided in the task
     const newState: any = {
       holdings: oldData.aequitas_portfolio?.holdings || oldData.holdings || oldData.portfolio?.holdings || null,
-      portfolioValue: oldData.aequitas_portfolio?.totalValue || oldData.portfolio?.totalValue || oldData.portfolioValue || null,
+      portfolioValue: Number(oldData.aequitas_portfolio?.totalValue || oldData.portfolio?.totalValue || oldData.portfolioValue || 0) || null,
+      dcaPlan: oldData.aequitas_dca_plan || oldData.dca || oldData.aequitas_dca || null,
       dividendPlan: oldData.aequitas_dividend_ledger || oldData.dividends || null,
+      thaiFundNavs: oldData.aequitas_thai_nav || oldData.thai_nav || oldData.thai_nav_state || null,
       watchlist: oldData.aequitas_watchlist || oldData.aequitas_watchlist_assets || oldData.watchlist || null,
       latestAiImportPlan: oldData.aequitas_ai_trading_plan || oldData.ai_import || null,
-      // Add other mappings if necessary
     };
+
+    // Derived fallback if portfolioValue is missing or 0 but holdings exist
+    if ((!newState.portfolioValue || newState.portfolioValue === 0) && newState.holdings?.length > 0) {
+      newState.portfolioValue = newState.holdings.reduce((acc: number, h: any) => acc + (Number(h.value) || 0), 0);
+    }
+
+    // Audit Report for debugging
+    console.log("[Aequitas OS] Migration Audit Report:");
+    console.log("- Detected Keys:", detectedLegacyKeys);
+    console.log("- Migrated Holdings Count:", newState.holdings?.length || 0);
+    console.log("- Migrated Portfolio Value:", newState.portfolioValue);
+    console.log("- Migrated AI Plan:", newState.latestAiImportPlan ? "Yes" : "No");
 
     const status: MigrationStatus = {
       source: 'old-local-storage',
