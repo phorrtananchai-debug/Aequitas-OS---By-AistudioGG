@@ -57,7 +57,7 @@ export default function AIWorkflowTab({
       health_score_pct: 94.8,
       currency: "USD"
     },
-    live_holdings: holdings.map(h => ({
+    live_holdings: (holdings || []).map(h => ({
       ticker: h.ticker,
       name: h.name,
       type: h.type,
@@ -68,10 +68,10 @@ export default function AIWorkflowTab({
       percent: h.allocationPct
     })),
     monthly_dca_plan: {
-      monthlyContributionPlan: dcaPlan.monthlyContributionPlan,
-      cashAvailable: dcaPlan.cashAvailable,
-      nextContributionReminder: dcaPlan.nextContributionReminder,
-      items: dcaPlan.items.map(item => ({
+      monthlyContributionPlan: dcaPlan?.monthlyContributionPlan,
+      cashAvailable: dcaPlan?.cashAvailable,
+      nextContributionReminder: dcaPlan?.nextContributionReminder,
+      items: (dcaPlan?.items || []).map(item => ({
         ticker: item.ticker,
         name: item.name,
         targetAmount: item.targetAmount,
@@ -81,11 +81,11 @@ export default function AIWorkflowTab({
       }))
     },
     dividend_plan: {
-      expectedMonthlyDividend: dividendPlan.expectedMonthlyDividend,
-      annualizedIncomeEstimate: dividendPlan.annualizedIncomeEstimate,
-      reinvestmentStatusDefault: dividendPlan.reinvestmentStatusDefault,
-      cashflowStabilityNotes: dividendPlan.cashflowStabilityNotes,
-      items: dividendPlan.items.map(item => ({
+      expectedMonthlyDividend: dividendPlan?.expectedMonthlyDividend,
+      annualizedIncomeEstimate: dividendPlan?.annualizedIncomeEstimate,
+      reinvestmentStatusDefault: dividendPlan?.reinvestmentStatusDefault,
+      cashflowStabilityNotes: dividendPlan?.cashflowStabilityNotes,
+      items: (dividendPlan?.items || []).map(item => ({
         ticker: item.ticker,
         name: item.name,
         yield: item.yield,
@@ -94,7 +94,7 @@ export default function AIWorkflowTab({
         reinvestmentStatus: item.reinvestmentStatus
       }))
     },
-    thai_nav_bridge_states: thaiFundNavs.map(f => ({
+    thai_nav_bridge_states: (thaiFundNavs || []).map(f => ({
       ticker: f.ticker,
       nav_thb: f.nav,
       last_reconciled: f.lastUpdated

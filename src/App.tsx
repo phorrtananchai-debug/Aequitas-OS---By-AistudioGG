@@ -218,16 +218,20 @@ export default function App() {
 
       // Try Cloud first
       if (uid) {
-        const cloudState = await fetchStateFromFirestore(uid);
-        if (cloudState) {
-          applyState(cloudState);
-          setWorkspaceMode('cloud');
-          setIsHydrating(false);
-          return;
+        try {
+          const cloudState = await fetchStateFromFirestore(uid);
+          if (cloudState) {
+            applyState(cloudState);
+            setWorkspaceMode('cloud');
+            setIsHydrating(false);
+            return;
+          }
+        } catch (e) {
+          console.warn("[Aequitas OS] Cloud discovery bypassed due to error (likely permissions). Falling back to local.", e);
         }
       }
 
-      // Try Namespaced Local Storage
+      // Try Namespaced Local Storage / Migration
       const { state, status, justMigrated } = migrateData(uid);
       if (state) {
         applyState(state);
@@ -268,16 +272,21 @@ export default function App() {
   }, [user, workspaceMode]);
 
   const applyState = (state: any) => {
-    if (state.holdings) setHoldings(state.holdings);
-    if (state.portfolioValue) setPortfolioValue(state.portfolioValue);
-    if (state.dcaPlan) setDcaPlan(state.dcaPlan);
-    if (state.dividendPlan) setDividendPlan(state.dividendPlan);
-    if (state.activities) setActivities(state.activities);
-    if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
-    if (state.watchlist) setWatchlist(state.watchlist);
-    if (state.snapshots) setSnapshots(state.snapshots);
-    if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
-    if (state.financialSettings) setFinancialSettings(state.financialSettings);
+    if (state.holdings) setHoldings(state.holdings || []);
+    if (state.portfolioValue) setPortfolioValue(state.portfolioValue || 0);
+    if (state.dcaPlan) setDcaPlan(state.dcaPlan || INITIAL_DCA_PLAN);
+    if (state.dividendPlan) setDividendPlan(state.dividendPlan || INITIAL_DIVIDEND_PLAN);
+    if (state.activities) setActivities(state.activities || []);
+    if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs || INITIAL_THAI_FUND_NAVS);
+    if (state.watchlist) setWatchlist(state.watchlist || []);
+    if (state.snapshots) setSnapshots(state.snapshots || []);
+    if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan || null);
+    if (state.financialSettings) setFinancialSettings(state.financialSettings || {
+      baseCurrency: 'USD',
+      usdThbRate: 36.45,
+      showThbTotals: true,
+      preferThaiNav: true
+    });
   };
 
   // 2. Persistent Storage Sync

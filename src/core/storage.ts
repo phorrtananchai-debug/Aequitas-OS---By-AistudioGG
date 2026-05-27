@@ -34,9 +34,9 @@ export const fetchStateFromFirestore = async (uid: string): Promise<Partial<AppS
   console.log(`[Aequitas OS] Starting Cloud Discovery for UID: ${uid}`);
 
   for (const pathSegments of discoveryPaths) {
+    const path = pathSegments.join('/');
     try {
-      const path = pathSegments.join('/');
-      console.log(`[Aequitas OS] Probing path: ${path}`);
+      console.log(`[Aequitas OS] Probing path: ${path} (UID: ${uid})`);
       const docRef = doc(db, pathSegments[0], ...pathSegments.slice(1));
       const docSnap = await getDoc(docRef);
 
@@ -52,8 +52,12 @@ export const fetchStateFromFirestore = async (uid: string): Promise<Partial<AppS
           console.log(`[Aequitas OS] Document at ${path} is empty. Continuing search...`);
         }
       }
-    } catch (error) {
-      console.error(`[Aequitas OS] Error probing path ${pathSegments.join('/')}:`, error);
+    } catch (error: any) {
+      if (error.code === 'permission-denied') {
+        console.warn(`[Aequitas OS] Permission Denied for path: ${path}. Please check Firestore Security Rules.`);
+      } else {
+        console.error(`[Aequitas OS] Error probing path ${path}:`, error);
+      }
     }
   }
 
