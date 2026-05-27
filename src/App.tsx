@@ -674,6 +674,28 @@ export default function App() {
                   });
                 }
               }}
+              onDiscoverCloudData={async () => {
+                if (!user) return;
+                setIsHydrating(true);
+                const cloudState = await fetchStateFromFirestore(user.uid);
+                if (cloudState) {
+                  applyState(cloudState);
+                  pushNotification({
+                    type: 'success',
+                    typeLabel: 'CLOUD DISCOVERY',
+                    title: 'Cloud State Found',
+                    description: `Successfully restored portfolio from cloud workspace. Detected ${cloudState.holdings?.length || 0} holdings.`
+                  });
+                } else {
+                  pushNotification({
+                    type: 'advisory',
+                    typeLabel: 'CLOUD DISCOVERY',
+                    title: 'No State Found',
+                    description: 'Cloud discovery completed. No existing non-empty portfolios were found across known paths.'
+                  });
+                }
+                setIsHydrating(false);
+              }}
             />
           )}
 
