@@ -25,32 +25,18 @@ interface SnapshotsTabProps {
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
   holdings?: any[];
+  snapshots: any[];
+  onUpdateSnapshots: (snapshots: any[]) => void;
 }
 
 export default function SnapshotsTab({
   portfolioValue,
   onUpdatePortfolio,
   onTriggerAlert,
-  holdings
+  holdings,
+  snapshots,
+  onUpdateSnapshots
 }: SnapshotsTabProps) {
-  const [snapshots, setSnapshots] = useState<SnapshotItem[]>([
-    {
-      id: 'snap-1',
-      name: 'Main Ledger Archive - April 2026 Sync',
-      timestamp: '2026-04-12T14:32:00Z',
-      value: 462000,
-      node: 'Primary Ledger',
-      drift: '3.1%'
-    },
-    {
-      id: 'snap-2',
-      name: 'Q1 Rebalance Baseline',
-      timestamp: '2026-01-05T09:15:00Z',
-      value: 415300,
-      node: 'Primary Ledger',
-      drift: '2.8%'
-    }
-  ]);
 
   const [newSnapshotName, setNewSnapshotName] = useState('');
 
@@ -67,7 +53,7 @@ export default function SnapshotsTab({
       drift: '3.2%'
     };
 
-    setSnapshots([newSnap, ...snapshots]);
+    onUpdateSnapshots([newSnap, ...snapshots]);
     setNewSnapshotName('');
     onTriggerAlert({
       type: 'success',
@@ -88,7 +74,7 @@ export default function SnapshotsTab({
   };
 
   const handleDeleteSnapshot = (id: string, name: string) => {
-    setSnapshots(snapshots.filter(s => s.id !== id));
+    onUpdateSnapshots(snapshots.filter(s => s.id !== id));
     onTriggerAlert({
       type: 'advisory',
       typeLabel: 'SNAPSHOT PRUNED',

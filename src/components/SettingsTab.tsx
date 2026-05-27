@@ -664,72 +664,102 @@ export default function SettingsTab({
               {/* SECTION: LEGACY DATA RECOVERY */}
               {activeSection === 'legacy' && (
                 <div className="space-y-6 animate-fade-in">
-                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800/15">
-                    <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 block pb-1">Legacy Data Recovery & Continuity</span>
-                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Legacy Data Vault</h3>
+                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800/15 flex justify-between items-end">
+                    <div>
+                      <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 block pb-1">Legacy Data Recovery & Continuity</span>
+                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Migration Coverage Audit</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-all"
+                    >
+                      <RefreshCw size={12} />
+                      Rescan Storage
+                    </button>
                   </div>
 
                   <p className="text-slate-550 leading-relaxed text-[11px]">
-                    To maintain product continuity, Aequitas OS audits your local storage for legacy data. Below is the status of identified old data blocks. If data is unmapped to the new UI, you can view it here in raw JSON format.
+                    To maintain product continuity, Aequitas OS audits your local storage for legacy data. Below is a real-time coverage report of detected legacy keys.
                   </p>
 
                   <div className="space-y-4">
-                    {/* Migration Summary */}
-                    {migrationStatus && (
-                      <div className="p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-900/10 border border-blue-100/30 dark:border-slate-800/10 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">Migration Summary</span>
-                          <span className="text-[10px] font-mono text-slate-400">
-                            {migrationStatus.migratedAt ? `Migrated on ${new Date(migrationStatus.migratedAt).toLocaleDateString()}` : 'No migration record'}
-                          </span>
+                    {/* Coverage Stats */}
+                    {migrationStatus?.coverageReport && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <span className="text-[8px] font-black text-slate-400 uppercase block tracking-widest">Detected</span>
+                          <span className="text-xl font-bold text-slate-900 dark:text-white">{migrationStatus.coverageReport.detected.length}</span>
                         </div>
-
-                        <div className="grid grid-cols-1 gap-2">
-                          {migrationStatus.detectedLegacyKeys?.map(key => {
-                            const isMapped = ![
-                              'aequitas_portfolio', 'portfolio', 'holdings',
-                              'aequitas_dca_plan', 'aequitas_dca', 'dca',
-                              'aequitas_dividend_ledger', 'dividends',
-                              'aequitas_trade_journal', 'activity', 'activities',
-                              'aequitas_thai_nav', 'thai_nav', 'thai_nav_state',
-                              'aequitas_watchlist', 'aequitas_watchlist_assets', 'watchlist',
-                              'aequitas_ai_trading_plan', 'ai_import',
-                              'aequitas_settings', 'settings',
-                              'aequitas_usd_thb_rate'
-                            ].includes(key);
-
-                            return (
-                              <div key={key} className="flex items-center justify-between text-[11px] py-1 border-b border-slate-100/50 dark:border-slate-800/5">
-                                <span className="font-mono text-slate-600 dark:text-slate-400">{key}</span>
-                                <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] uppercase ${
-                                  !isMapped ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                                }`}>
-                                  {!isMapped ? 'Successfully Mapped' : 'Unmapped / Safe Vault'}
-                                </span>
-                              </div>
-                            );
-                          })}
-                          {(!migrationStatus.detectedLegacyKeys || migrationStatus.detectedLegacyKeys.length === 0) && (
-                            <p className="text-center text-slate-400 py-4 italic">No legacy aequitas_* keys detected in local storage.</p>
-                          )}
+                        <div className="p-3 bg-emerald-50/40 dark:bg-emerald-950/10 rounded-xl border border-emerald-100/30 dark:border-emerald-800/20">
+                          <span className="text-[8px] font-black text-emerald-600 uppercase block tracking-widest">Migrated</span>
+                          <span className="text-xl font-bold text-emerald-600">{migrationStatus.coverageReport.migrated.length}</span>
+                        </div>
+                        <div className="p-3 bg-blue-50/40 dark:bg-blue-950/10 rounded-xl border border-blue-100/30 dark:border-blue-800/20">
+                          <span className="text-[8px] font-black text-blue-600 uppercase block tracking-widest">Ignored</span>
+                          <span className="text-xl font-bold text-blue-600">{migrationStatus.coverageReport.ignored.length}</span>
+                        </div>
+                        <div className="p-3 bg-amber-50/40 dark:bg-amber-950/10 rounded-xl border border-amber-100/30 dark:border-amber-800/20">
+                          <span className="text-[8px] font-black text-amber-600 uppercase block tracking-widest">Vaulted</span>
+                          <span className="text-xl font-bold text-amber-600">{migrationStatus.coverageReport.unsupported.length}</span>
                         </div>
                       </div>
                     )}
+
+                    {/* Detailed Key List */}
+                    <div className="glass-panel overflow-hidden rounded-2xl border border-slate-205/60 dark:border-slate-800/25">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-[11px] font-sans">
+                          <thead>
+                            <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/45">
+                              <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">Legacy Key</th>
+                              <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                            {migrationStatus?.coverageReport?.detected.map(key => {
+                              const report = migrationStatus.coverageReport!;
+                              const status = report.migrated.includes(key) ? 'Migrated' :
+                                           report.ignored.includes(key) ? 'Ignored' : 'Unsupported';
+
+                              return (
+                                <tr key={key} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20">
+                                  <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">{key}</td>
+                                  <td className="px-4 py-3">
+                                    <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] uppercase ${
+                                      status === 'Migrated' ? 'bg-emerald-50 text-emerald-700' :
+                                      status === 'Ignored' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
+                                    }`}>
+                                      {status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {(!migrationStatus?.coverageReport?.detected || migrationStatus.coverageReport.detected.length === 0) && (
+                              <tr>
+                                <td colSpan={2} className="px-4 py-8 text-center text-slate-400 italic">No legacy aequitas_* keys detected in local storage.</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
 
                     {/* Unmapped Data Vault */}
                     {migrationStatus?.unmappedLegacyData && Object.keys(migrationStatus.unmappedLegacyData).length > 0 && (
                       <div className="space-y-3 pt-2">
                         <div className="flex items-center gap-2 text-amber-600">
                           <FolderLock size={16} />
-                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">Unmapped Data Vault (Read-Only)</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">Safe Data Vault (Raw JSON)</span>
                         </div>
                         <div className="bg-slate-950 rounded-xl p-4 overflow-hidden border border-slate-800">
                           <pre className="text-[10px] text-amber-400 font-mono overflow-auto max-h-60 leading-relaxed scrollbar-thin">
                             {JSON.stringify(migrationStatus.unmappedLegacyData, null, 2)}
                           </pre>
                         </div>
-                        <p className="text-[10px] text-slate-400 italic">
-                          This data is stored safely but currently has no direct UI representation in the new Luminous Shell.
+                        <p className="text-[10px] text-slate-400 italic leading-relaxed">
+                          This data structure was detected but is not yet natively supported by the new OS UI. It is stored safely and can be copied or audited manually.
                         </p>
                       </div>
                     )}
