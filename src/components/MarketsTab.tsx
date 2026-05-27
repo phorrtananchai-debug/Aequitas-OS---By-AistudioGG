@@ -15,7 +15,8 @@ import {
   Sliders,
   AlertCircle
 } from 'lucide-react';
-import { Holding, ThaiFundNavState, AlertItem } from '../types';
+import { Holding, ThaiFundNavState, AlertItem, FinancialSettings } from '../types';
+import { formatCurrency } from '../core/utils';
 
 interface HoldingsTabProps {
   searchQuery: string;
@@ -24,6 +25,7 @@ interface HoldingsTabProps {
   onUpdateHoldings: (nextHoldings: Holding[]) => void;
   thaiFundNavs: ThaiFundNavState[];
   onUpdateThaiFundNavs: (nextNavs: ThaiFundNavState[]) => void;
+  financialSettings: FinancialSettings;
 }
 
 export default function MarketsTab({
@@ -32,7 +34,8 @@ export default function MarketsTab({
   holdings,
   onUpdateHoldings,
   thaiFundNavs,
-  onUpdateThaiFundNavs
+  onUpdateThaiFundNavs,
+  financialSettings
 }: HoldingsTabProps) {
   const [filterType, setFilterType] = useState<string>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -104,7 +107,7 @@ export default function MarketsTab({
       type: 'success',
       typeLabel: 'HOLDING RE-SYNCED',
       title: 'Ledger Holding Updated',
-      description: `Manually reconciled parameters successfully. Total position size recalibrated to $${valueCalculated.toLocaleString()}.`
+      description: `Manually reconciled parameters successfully. Total position size recalibrated to ${formatCurrency(valueCalculated, financialSettings)}.`
     });
   };
 
@@ -130,18 +133,21 @@ export default function MarketsTab({
     onUpdateThaiFundNavs(nextNavs);
 
     // 2. Cascade changes back to holdings asset values
+    // Important: Convert THB NAV to USD for the value property if base is USD
+    const fxRate = financialSettings.usdThbRate || 36.45;
     const matchNav = nextNavs.find(f => f.ticker === ticker);
     const nextHoldings = holdings.map(h => {
       if (h.ticker === ticker && matchNav) {
-        const nextValue = h.units * navVal;
-        const totalCostAndBasis = h.units * h.avgCost;
-        const calculatedGain = nextValue - totalCostAndBasis;
-        const gainPct = totalCostAndBasis > 0 ? (calculatedGain / totalCostAndBasis) * 100 : 0;
+        const nextValueThb = h.units * navVal;
+        const nextValueUsd = nextValueThb / fxRate;
+        const totalCostAndBasisUsd = h.units * h.avgCost;
+        const calculatedGainUsd = nextValueUsd - totalCostAndBasisUsd;
+        const gainPct = totalCostAndBasisUsd > 0 ? (calculatedGainUsd / totalCostAndBasisUsd) * 100 : 0;
         return {
           ...h,
-          currentPrice: navVal,
-          value: parseFloat(nextValue.toFixed(2)),
-          gainLoss: parseFloat(calculatedGain.toFixed(2)),
+          currentPrice: navVal, // Store NAV in THB for Thai assets
+          value: parseFloat(nextValueUsd.toFixed(2)),
+          gainLoss: parseFloat(calculatedGainUsd.toFixed(2)),
           gainLossPct: parseFloat(gainPct.toFixed(2))
         };
       }
@@ -365,13 +371,13 @@ export default function MarketsTab({
                             className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
                         ) : (
-                          `$${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                          h.type.includes('Thai') ? `฿${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : `$${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                         )}
                       </td>
 
                       {/* Computed Subtotal Value */}
                       <td className="px-6 py-4 text-right">
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">${h.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(h.value, financialSettings)}</span>
                         <span className={`block font-mono text-[9px] uppercase font-semibold mt-0.5 ${isGain ? 'text-emerald-650' : 'text-rose-600'}`}>
                           {isGain ? '▲' : '▼'} {isGain ? '+' : ''}{h.gainLossPct}%
                         </span>

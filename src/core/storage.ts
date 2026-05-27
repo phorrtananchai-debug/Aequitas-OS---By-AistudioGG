@@ -1,4 +1,4 @@
-import { MigrationStatus, Holding, DcaPlan, DividendPlan, ThaiFundNavState, WatchlistItem, AiImportSchema } from '../types';
+import { MigrationStatus, Holding, DcaPlan, DividendPlan, ThaiFundNavState, WatchlistItem, AiImportSchema, FinancialSettings } from '../types';
 
 const STORAGE_KEY = 'aequitas_os_state_v1';
 const BACKUP_PREFIX = 'aequitas_pre_migration_backup_';
@@ -12,6 +12,7 @@ export interface AppState {
   watchlist: WatchlistItem[];
   migrationStatus: MigrationStatus;
   latestAiImportPlan: AiImportSchema | null;
+  financialSettings: FinancialSettings;
 }
 
 export const migrateData = () => {
@@ -68,6 +69,12 @@ export const migrateData = () => {
       thaiFundNavs: oldData.aequitas_thai_nav || oldData.thai_nav || oldData.thai_nav_state || null,
       watchlist: oldData.aequitas_watchlist || oldData.aequitas_watchlist_assets || oldData.watchlist || null,
       latestAiImportPlan: oldData.aequitas_ai_trading_plan || oldData.ai_import || null,
+      financialSettings: {
+        baseCurrency: oldData.settings?.baseCurrency || 'USD',
+        usdThbRate: Number(oldData.aequitas_usd_thb_rate || oldData.settings?.usdThbRate || 36.45),
+        showThbTotals: oldData.settings?.showThbTotals ?? true,
+        preferThaiNav: oldData.settings?.preferThaiNav ?? true
+      }
     };
 
     // Derived fallback if portfolioValue is missing or 0 but holdings exist

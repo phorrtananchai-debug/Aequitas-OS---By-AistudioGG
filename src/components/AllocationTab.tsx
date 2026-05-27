@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Sliders, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
-import { Holding, AiImportSchema } from '../types';
-import { calculatePortfolioDrift } from '../core/utils';
+import { Holding, AiImportSchema, FinancialSettings } from '../types';
+import { calculatePortfolioDrift, formatCurrency } from '../core/utils';
 
 interface AllocationTabProps {
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
   holdings?: Holding[];
   latestAiImportPlan?: AiImportSchema | null;
+  financialSettings: FinancialSettings;
 }
 
-export default function AllocationTab({ onTriggerAlert, holdings, latestAiImportPlan }: AllocationTabProps) {
+export default function AllocationTab({ onTriggerAlert, holdings, latestAiImportPlan, financialSettings }: AllocationTabProps) {
   const [driftTolerance, setDriftTolerance] = useState<number>(3.5);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 

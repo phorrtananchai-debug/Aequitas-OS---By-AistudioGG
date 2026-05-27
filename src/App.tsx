@@ -14,7 +14,8 @@ import {
   ChatMessage, 
   ThaiFundNavState,
   AiImportSchema,
-  MigrationStatus
+  MigrationStatus,
+  FinancialSettings
 } from './types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -177,6 +178,12 @@ export default function App() {
   const [latestAiImportPlan, setLatestAiImportPlan] = useState<AiImportSchema | null>(null);
   const [aiImportStatus, setAiImportStatus] = useState<string>('Offline Schema Mode: Default core parameters preloaded.');
   const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
+  const [financialSettings, setFinancialSettings] = useState<FinancialSettings>({
+    baseCurrency: 'USD',
+    usdThbRate: 36.45,
+    showThbTotals: true,
+    preferThaiNav: true
+  });
 
   // Simulated Simulation model backups
   const [simulations, setSimulations] = useState<any[]>([
@@ -204,6 +211,7 @@ export default function App() {
       if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
       if (state.watchlist) setWatchlist(state.watchlist);
       if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
+      if (state.financialSettings) setFinancialSettings(state.financialSettings);
     }
     setMigrationStatus(status);
 
@@ -235,9 +243,10 @@ export default function App() {
       thaiFundNavs,
       watchlist,
       latestAiImportPlan,
+      financialSettings,
       migrationStatus: migrationStatus || undefined
     });
-  }, [holdings, portfolioValue, dcaPlan, dividendPlan, thaiFundNavs, watchlist, latestAiImportPlan, migrationStatus]);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, thaiFundNavs, watchlist, latestAiImportPlan, financialSettings, migrationStatus]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -422,6 +431,7 @@ export default function App() {
         onOpenSupport={() => setSupportModalOpen(true)}
         onTriggerAlert={pushNotification}
         portfolioValue={portfolioValue}
+        financialSettings={financialSettings}
       />
 
       {/* 2. Top Navigation header */}
@@ -451,6 +461,7 @@ export default function App() {
               cashAvailable={dcaPlan.items.find(x => x.ticker === 'CASH')?.targetAmount ?? 8690}
               dividendMonthly={dividendPlan.expectedMonthlyDividend}
               holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -459,6 +470,7 @@ export default function App() {
               portfolioValue={portfolioValue}
               dailyBrief={dailyBrief}
               holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -468,6 +480,7 @@ export default function App() {
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -479,6 +492,7 @@ export default function App() {
               onUpdateHoldings={setHoldings}
               thaiFundNavs={thaiFundNavs}
               onUpdateThaiFundNavs={setThaiFundNavs}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -487,6 +501,7 @@ export default function App() {
               onTriggerAlert={pushNotification}
               holdings={holdings}
               latestAiImportPlan={latestAiImportPlan}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -495,6 +510,7 @@ export default function App() {
               dividendPlan={dividendPlan}
               onUpdateDividendPlan={setDividendPlan}
               holdings={holdings}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -504,6 +520,7 @@ export default function App() {
               onUpdateDcaPlan={setDcaPlan}
               holdings={holdings}
               onTriggerAlert={pushNotification}
+              financialSettings={financialSettings}
             />
           )}
 
@@ -559,6 +576,8 @@ export default function App() {
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               migrationStatus={migrationStatus}
+              financialSettings={financialSettings}
+              onUpdateFinancialSettings={setFinancialSettings}
             />
           )}
 

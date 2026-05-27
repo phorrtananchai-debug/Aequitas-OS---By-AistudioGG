@@ -10,16 +10,17 @@ import {
   Clock,
   ShieldAlert
 } from 'lucide-react';
-import { DailyBrief, Holding } from '../types';
-import { calculateLayerStats, calculatePortfolioDrift } from '../core/utils';
+import { DailyBrief, Holding, FinancialSettings } from '../types';
+import { calculateLayerStats, calculatePortfolioDrift, formatCurrency } from '../core/utils';
 
 interface DailyBriefProps {
   portfolioValue: number;
   dailyBrief: DailyBrief;
   holdings: Holding[];
+  financialSettings: FinancialSettings;
 }
 
-export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings }: DailyBriefProps) {
+export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings, financialSettings }: DailyBriefProps) {
   const layerStats = calculateLayerStats(holdings);
   const drift = calculatePortfolioDrift(holdings);
   const today = new Date().toLocaleDateString('en-US', { 
@@ -62,9 +63,11 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings }: 
                 <h3 className="text-lg font-bold tracking-tight mt-1 text-slate-900 dark:text-white">Active Core Balance</h3>
               </div>
               <div className="text-right">
-                <span className="text-3xl font-black text-slate-900 dark:text-white">${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="text-3xl font-black text-slate-900 dark:text-white">
+                  {formatCurrency(portfolioValue, financialSettings)}
+                </span>
                 <p className="text-[10px] text-emerald-650 font-bold uppercase mt-1 flex items-center justify-end gap-0.5">
-                  <ArrowUpRight size={10} /> +2.48% relative growth
+                  <ArrowUpRight size={10} /> {financialSettings.showThbTotals ? `~ $${portfolioValue.toLocaleString()}` : '+2.48% relative growth'}
                 </p>
               </div>
             </div>
@@ -140,7 +143,7 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings }: 
               </div>
               <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100 dark:border-slate-805/10">
                 <span className="text-slate-550 font-medium font-sans">USD/THB FX conversion</span>
-                <span className="font-mono font-bold text-emerald-600">36.45 THB</span>
+                <span className="font-mono font-bold text-emerald-600">{financialSettings.usdThbRate} THB</span>
               </div>
             </div>
 
@@ -150,7 +153,7 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings }: 
               <div>
                 <h4 className="text-xs font-bold text-amber-850 dark:text-amber-400 font-sans">{dailyBrief.dividendReminder ? "Income Schedule" : "Upcoming Yield"}</h4>
                 <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-0.5 leading-normal">
-                  {dailyBrief.dividendReminder ?? "Passive stock cash flows calculated in core layers for automated reinvestment."}
+                  {dailyBrief.dividendReminder ? `${dailyBrief.dividendReminder} (${formatCurrency(parseFloat(dailyBrief.dividendReminder.replace(/[^0-9.]/g, '')), financialSettings)})` : "Passive stock cash flows calculated in core layers for automated reinvestment."}
                 </p>
               </div>
             </div>

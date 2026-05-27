@@ -77,3 +77,13 @@ export const calculatePortfolioDrift = (holdings: Holding[]) => {
 
   return parseFloat(totalWeightedDrift.toFixed(1));
 };
+
+export const formatCurrency = (value: number, settings: { baseCurrency: string, usdThbRate: number, showThbTotals: boolean }) => {
+  if (settings.showThbTotals) {
+    const thbValue = value * settings.usdThbRate;
+    return `฿${thbValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
+
+  const symbol = settings.baseCurrency === 'USD' ? '$' : settings.baseCurrency + ' ';
+  return `${symbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};

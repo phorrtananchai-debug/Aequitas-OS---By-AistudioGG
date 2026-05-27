@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Calendar, Layers, Clock, Plus, ArrowUpRight, CheckCircle2, ChevronRight, Play } from 'lucide-react';
-import { DcaPlan, Holding, AlertItem } from '../types';
+import { DcaPlan, Holding, AlertItem, FinancialSettings } from '../types';
+import { formatCurrency } from '../core/utils';
 
 interface DcaPlanTabProps {
   dcaPlan: DcaPlan;
   onUpdateDcaPlan: (plan: DcaPlan) => void;
   holdings: Holding[];
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
+  financialSettings: FinancialSettings;
 }
 
-export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTriggerAlert }: DcaPlanTabProps) {
+export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTriggerAlert, financialSettings }: DcaPlanTabProps) {
   const [activeFrequency, setActiveFrequency] = useState<string>('Monthly');
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
@@ -28,7 +30,7 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
         type: 'success',
         typeLabel: 'DCA EXECUTED',
         title: 'Monthly Contribution Distributed',
-        description: `Successfully simulated the distribution of $${dcaPlan.monthlyContributionPlan.toLocaleString()} across target assets.`
+        description: `Successfully simulated the distribution of ${formatCurrency(dcaPlan.monthlyContributionPlan, financialSettings)} across target assets.`
       });
     }, 1500);
   };
@@ -88,7 +90,7 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
               <div className="space-y-1.5 text-xs font-bold text-slate-655 shrink-0">
                 <div className="flex justify-between items-baseline">
                   <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Recurring Amount (USD)</label>
-                  <span className="font-mono text-blue-600 font-bold">${dcaPlan.monthlyContributionPlan.toLocaleString()} / period</span>
+                  <span className="font-mono text-blue-600 font-bold">{formatCurrency(dcaPlan.monthlyContributionPlan, financialSettings)} / period</span>
                 </div>
                 <input 
                   type="range"
@@ -119,7 +121,7 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="font-mono font-bold text-slate-900 dark:text-white">${item.targetAmount.toLocaleString()}</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(item.targetAmount, financialSettings)}</span>
                           <span className="text-[10px] text-slate-400 block font-mono">({((item.targetAmount / dcaPlan.monthlyContributionPlan) * 100).toFixed(1)}%)</span>
                         </div>
                       </div>
@@ -197,7 +199,7 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
               {historicalContributions.map((log, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                   <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{log.date}</td>
-                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${log.total.toFixed(2)}</td>
+                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(log.total, financialSettings)}</td>
                   <td className="px-6 py-4 text-slate-500 font-mono italic">{log.breakdown}</td>
                   <td className="px-6 py-4 text-right">
                     <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/25 px-2.5 py-1 rounded-full border border-emerald-100/40">

@@ -13,8 +13,8 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react';
-import { TabType, DailyBrief, Holding } from '../types';
-import { calculateLayerStats, calculateDividendStats } from '../core/utils';
+import { TabType, DailyBrief, Holding, FinancialSettings } from '../types';
+import { calculateLayerStats, calculateDividendStats, formatCurrency } from '../core/utils';
 
 interface OverviewProps {
   portfolioValue: number;
@@ -26,6 +26,7 @@ interface OverviewProps {
   cashAvailable: number;
   dividendMonthly: number;
   holdings: Holding[];
+  financialSettings: FinancialSettings;
 }
 
 export default function OverviewTab({
@@ -37,17 +38,18 @@ export default function OverviewTab({
   dcaTarget,
   cashAvailable,
   dividendMonthly,
-  holdings
+  holdings,
+  financialSettings
 }: OverviewProps) {
 
   const layerStats = calculateLayerStats(holdings);
   const dividendStats = calculateDividendStats(holdings);
   
   const stats = [
-    { title: 'Total Portfolio Value', value: `$${layerStats.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: 'Live Ledger', isPositive: true, icon: BarChart3, color: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/20' },
+    { title: 'Total Portfolio Value', value: formatCurrency(layerStats.totalValue, financialSettings), change: financialSettings.showThbTotals ? `FX: ${financialSettings.usdThbRate}` : 'Live Ledger', isPositive: true, icon: BarChart3, color: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/20' },
     { title: 'Portfolio Health Rating', value: `${healthScore.toFixed(1)}%`, change: healthScore > 90 ? 'Optimal' : 'Review Required', isPositive: true, icon: ShieldCheck, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/20' },
-    { title: 'Target Monthly DCA', value: `$${dcaTarget.toLocaleString()}`, change: 'Plan Configured', isPositive: true, icon: Calendar, color: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/20' },
-    { title: 'Dividends (Monthly Est.)', value: `$${dividendStats.monthlyEst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: 'Passive Income', isPositive: true, icon: TrendingUp, color: 'text-purple-650 dark:text-purple-400 bg-purple-50/80 dark:bg-purple-950/20' },
+    { title: 'Target Monthly DCA', value: formatCurrency(dcaTarget, financialSettings), change: 'Plan Configured', isPositive: true, icon: Calendar, color: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/20' },
+    { title: 'Dividends (Monthly Est.)', value: formatCurrency(dividendStats.monthlyEst, financialSettings), change: 'Passive Income', isPositive: true, icon: TrendingUp, color: 'text-purple-650 dark:text-purple-400 bg-purple-50/80 dark:bg-purple-950/20' },
   ];
 
   return (

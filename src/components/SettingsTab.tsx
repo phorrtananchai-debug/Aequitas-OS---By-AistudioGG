@@ -1,5 +1,5 @@
 import React, { useState, FormEvent } from 'react';
-import { MigrationStatus } from '../types';
+import { MigrationStatus, FinancialSettings } from '../types';
 import { 
   Settings as SettingsIcon, 
   ShieldAlert, 
@@ -25,20 +25,24 @@ import {
   CircleDot
 } from 'lucide-react';
 
+type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs';
+
 interface SettingsTabProps {
   portfolioValue: number;
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
   migrationStatus: MigrationStatus | null;
+  financialSettings: FinancialSettings;
+  onUpdateFinancialSettings: (settings: FinancialSettings) => void;
 }
-
-type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs';
 
 export default function SettingsTab({
   portfolioValue,
   onUpdatePortfolio,
   onTriggerAlert,
-  migrationStatus
+  migrationStatus,
+  financialSettings,
+  onUpdateFinancialSettings
 }: SettingsTabProps) {
   // Active settings tab category
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -50,7 +54,11 @@ export default function SettingsTab({
   const [motion, setMotion] = useState<'smooth' | 'reduced' | 'none'>('smooth');
 
   // Portfolio state
-  const [baseCurrency, setBaseCurrency] = useState<string>('USD');
+  const [baseCurrency, setBaseCurrency] = useState<string>(financialSettings.baseCurrency);
+  const [usdThbRate, setUsdThbRate] = useState<string>(financialSettings.usdThbRate.toString());
+  const [showThbTotals, setShowThbTotals] = useState<boolean>(financialSettings.showThbTotals);
+  const [preferThaiNav, setPreferThaiNav] = useState<boolean>(financialSettings.preferThaiNav);
+
   const [dividendPref, setDividendPref] = useState<string>('compound');
   const [dcaInterval, setDcaInterval] = useState<string>('weekly');
   const [ledgerVal, setLedgerVal] = useState<string>(portfolioValue.toString());
@@ -85,6 +93,14 @@ export default function SettingsTab({
       if (!isNaN(numericVal) && numericVal > 0) {
         onUpdatePortfolio(numericVal);
       }
+
+      onUpdateFinancialSettings({
+        baseCurrency,
+        usdThbRate: parseFloat(usdThbRate) || 36.45,
+        showThbTotals,
+        preferThaiNav
+      });
+
       setIsSaving(false);
       onTriggerAlert({
         type: 'success',
@@ -253,6 +269,50 @@ export default function SettingsTab({
                           {opt}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* THB / FX Settings */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-655 block uppercase tracking-wider">USD/THB FX Rate</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={usdThbRate}
+                        onChange={(e) => setUsdThbRate(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 text-slate-950 dark:text-white rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="space-y-2 flex flex-col justify-center pt-4">
+                      <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                        <div>
+                          <span className="font-bold text-xs block text-slate-800 dark:text-slate-200">Show THB Totals</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowThbTotals(!showThbTotals)}
+                          className="text-blue-600"
+                        >
+                          {showThbTotals ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                      <div>
+                        <span className="font-bold text-xs block text-slate-800 dark:text-slate-200">Prefer Thai Fund NAV over Google Sheets</span>
+                        <span className="text-[10px] text-slate-400 block">Uses manually entered NAV from Thai Fund Sync tool.</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPreferThaiNav(!preferThaiNav)}
+                        className="text-blue-600"
+                      >
+                        {preferThaiNav ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
+                      </button>
                     </div>
                   </div>
 

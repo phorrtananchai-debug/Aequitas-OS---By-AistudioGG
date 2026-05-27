@@ -256,3 +256,10 @@ export interface MigrationStatus {
   success?: boolean;
   warnings: string[];
 }
+
+export interface FinancialSettings {
+  baseCurrency: string;
+  usdThbRate: number;
+  showThbTotals: boolean;
+  preferThaiNav: boolean;
+}
