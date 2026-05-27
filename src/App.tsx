@@ -450,6 +450,7 @@ export default function App() {
         toggleDarkMode={() => setDarkMode(!darkMode)}
         onClearNotification={handleClearNotif}
         onClearAllNotifications={handleClearAllNotifs}
+        migrationStatus={migrationStatus}
       />
 
       {/* 3. Main content body wrapper */}
@@ -464,7 +465,7 @@ export default function App() {
               driftPct={calculatePortfolioDrift(holdings)}
               dailyBrief={dailyBrief}
               dcaTarget={dcaPlan.monthlyContributionPlan}
-              cashAvailable={dcaPlan.items.find(x => x.ticker === 'CASH')?.targetAmount ?? 8690}
+              cashAvailable={dcaPlan.cashAvailable}
               dividendMonthly={dividendPlan.expectedMonthlyDividend}
               holdings={holdings}
               financialSettings={financialSettings}
@@ -554,6 +555,7 @@ export default function App() {
               holdings={holdings}
               snapshots={snapshots}
               onUpdateSnapshots={setSnapshots}
+              financialSettings={financialSettings}
             />
           )}
 

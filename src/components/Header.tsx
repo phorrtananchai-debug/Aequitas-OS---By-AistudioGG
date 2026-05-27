@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Bell, Moon, Sun, DollarSign, ArrowRight } from 'lucide-react';
-import { AlertItem } from '../types';
+import { Search, Bell, Moon, Sun, DollarSign, ArrowRight, Database } from 'lucide-react';
+import { AlertItem, MigrationStatus } from '../types';
 
 interface HeaderProps {
   searchQuery: string;
@@ -11,6 +11,7 @@ interface HeaderProps {
   toggleDarkMode: () => void;
   onClearNotification: (id: string) => void;
   onClearAllNotifications: () => void;
+  migrationStatus: MigrationStatus | null;
 }
 
 export default function Header({
@@ -21,7 +22,8 @@ export default function Header({
   darkMode,
   toggleDarkMode,
   onClearNotification,
-  onClearAllNotifications
+  onClearAllNotifications,
+  migrationStatus
 }: HeaderProps) {
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -76,6 +78,14 @@ export default function Header({
       {/* Quick Action bar icons, Dark mode, execute trade, avatar */}
       <div className="flex items-center gap-4">
         
+        {/* Migration/Continuity Indicator */}
+        {migrationStatus?.source === 'old-local-storage' && (
+          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-full">
+            <Database size={12} className="text-emerald-600 dark:text-emerald-400" />
+            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Legacy Continuity Active</span>
+          </div>
+        )}
+
         {/* Dark Mode toggle */}
         <button
           id="btn-header-dark-mode"

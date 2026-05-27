@@ -255,7 +255,7 @@ export default function MarketsTab({
                   </div>
                 ) : (
                   <>
-                    <span className="text-base font-bold font-mono text-emerald-400">{fund.nav.toFixed(2)} THB</span>
+                    <span className="text-base font-bold font-mono text-emerald-400">฿{fund.nav.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     <button 
                       onClick={() => handleTriggerThaiNavUpdate(fund.ticker)}
                       className="text-[10px] font-bold text-blue-400 hover:underline bg-transparent"
@@ -357,7 +357,7 @@ export default function MarketsTab({
                             className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
                         ) : (
-                          `$${h.avgCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                          `$${h.avgCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                         )}
                       </td>
 
@@ -371,7 +371,7 @@ export default function MarketsTab({
                             className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
                         ) : (
-                          h.type.includes('Thai') ? `฿${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : `$${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                          h.type.includes('Thai') ? `฿${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                         )}
                       </td>
 

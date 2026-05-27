@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sliders, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Holding, AiImportSchema, FinancialSettings } from '../types';
-import { calculatePortfolioDrift, formatCurrency } from '../core/utils';
+import { calculatePortfolioDrift, calculateLayerStats, formatCurrency } from '../core/utils';
 
 interface AllocationTabProps {
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
@@ -15,23 +15,7 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   const drift = holdings ? calculatePortfolioDrift(holdings) : 3.2;
-
-  // Sum current values for each layer:
-  const totalVal = holdings?.reduce((acc, h) => acc + h.value, 0) || 485290;
-  
-  const getLayerCurrentPct = (layerName: string): number => {
-    if (!holdings) return 0;
-    const layerHoldings = holdings.filter(h => {
-      if (layerName === 'Core ETF Layer') return h.type === 'US ETF' || h.type === 'Thai Mutual Fund';
-      if (layerName === 'Growth Layer') return h.type === 'US Stock';
-      if (layerName === 'Dividend / Behavior Layer') return h.type === 'Dividend ETF';
-      if (layerName === 'Thai Tax Wrapper Layer') return h.type === 'Thai RMF';
-      if (layerName === 'Sandbox Layer') return h.type === 'Sandbox Asset';
-      return false;
-    });
-    const layerVal = layerHoldings.reduce((acc, h) => acc + h.value, 0);
-    return parseFloat(((layerVal / totalVal) * 100).toFixed(1));
-  };
+  const layerStats = calculateLayerStats(holdings || []);
 
   const getTargetPct = (layerName: string, defaultVal: number): number => {
     if (latestAiImportPlan?.allocationPlan?.buckets) {
@@ -42,11 +26,11 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
   };
 
   const allocations = [
-    { ticker: 'CORE', name: 'Core ETF Layer', target: getTargetPct('Core ETF Layer', 35), current: getLayerCurrentPct('Core ETF Layer'), color: 'bg-blue-600', text: 'text-blue-650' },
-    { ticker: 'GROWTH', name: 'Growth Layer', target: getTargetPct('Growth Layer', 35), current: getLayerCurrentPct('Growth Layer'), color: 'bg-indigo-600', text: 'text-indigo-600' },
-    { ticker: 'DIVIDEND', name: 'Dividend / Behavior Layer', target: getTargetPct('Dividend / Behavior Layer', 15), current: getLayerCurrentPct('Dividend / Behavior Layer'), color: 'bg-emerald-600', text: 'text-emerald-600' },
-    { ticker: 'TAX_WRAP', name: 'Thai Tax Wrapper Layer', target: getTargetPct('Thai Tax Wrapper Layer', 12), current: getLayerCurrentPct('Thai Tax Wrapper Layer'), color: 'bg-amber-600', text: 'text-amber-600' },
-    { ticker: 'SANDBOX', name: 'Sandbox Layer', target: getTargetPct('Sandbox Layer', 3), current: getLayerCurrentPct('Sandbox Layer'), color: 'bg-purple-600', text: 'text-purple-600' },
+    { ticker: 'CORE', name: 'Core ETF Layer', target: getTargetPct('Core ETF Layer', 35), current: layerStats.core.pct, color: 'bg-blue-600', text: 'text-blue-650' },
+    { ticker: 'GROWTH', name: 'Growth Layer', target: getTargetPct('Growth Layer', 35), current: layerStats.growth.pct, color: 'bg-indigo-600', text: 'text-indigo-600' },
+    { ticker: 'DIVIDEND', name: 'Dividend / Behavior Layer', target: getTargetPct('Dividend / Behavior Layer', 15), current: layerStats.dividend.pct, color: 'bg-emerald-600', text: 'text-emerald-600' },
+    { ticker: 'TAX_WRAP', name: 'Thai Tax Wrapper Layer', target: getTargetPct('Thai Tax Wrapper Layer', 12), current: layerStats.tax.pct, color: 'bg-amber-600', text: 'text-amber-600' },
+    { ticker: 'SANDBOX', name: 'Sandbox Layer', target: getTargetPct('Sandbox Layer', 3), current: layerStats.sandbox.pct, color: 'bg-purple-600', text: 'text-purple-600' },
   ];
 
   const handleSyncLimits = () => {
