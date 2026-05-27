@@ -1,7 +1,12 @@
 import { MigrationStatus, Holding, DcaPlan, DividendPlan, ThaiFundNavState, WatchlistItem, AiImportSchema, FinancialSettings, ActivityItem, Snapshot } from '../types';
 
-const STORAGE_KEY = 'aequitas_os_state_v1';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
+
+const STORAGE_KEY_BASE = 'aequitas_os_state_v1';
 const BACKUP_PREFIX = 'aequitas_pre_migration_backup_';
+
+export const getStorageKey = (uid?: string) => uid ? `${STORAGE_KEY_BASE}_${uid}` : STORAGE_KEY_BASE;
 
 export interface AppState {
   holdings: Holding[];
@@ -17,8 +22,32 @@ export interface AppState {
   financialSettings: FinancialSettings;
 }
 
-export const migrateData = () => {
+export const fetchStateFromFirestore = async (uid: string): Promise<Partial<AppState> | null> => {
+  try {
+    const docRef = doc(db, 'users', uid, 'aequitas', 'state');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as Partial<AppState>;
+    }
+  } catch (error) {
+    console.error("Error fetching from Firestore:", error);
+  }
+  return null;
+};
+
+export const saveStateToFirestore = async (uid: string, state: Partial<AppState>) => {
+  try {
+    const docRef = doc(db, 'users', uid, 'aequitas', 'state');
+    await setDoc(docRef, state, { merge: true });
+  } catch (error) {
+    console.error("Error saving to Firestore:", error);
+  }
+};
+
+export const migrateData = (uid?: string) => {
   if (typeof window === 'undefined') return { state: null, status: null };
+
+  const STORAGE_KEY = getStorageKey(uid);
 
   // 1. Audit current storage for coverage report regardless of existing state
   let oldData: any = {};
@@ -190,8 +219,9 @@ export const migrateData = () => {
   };
 };
 
-export const saveState = (state: Partial<AppState>) => {
+export const saveState = (state: Partial<AppState>, uid?: string) => {
   if (typeof window === 'undefined') return;
+  const STORAGE_KEY = getStorageKey(uid);
   const existing = localStorage.getItem(STORAGE_KEY);
   let base = {};
   if (existing) {
@@ -201,5 +231,11 @@ export const saveState = (state: Partial<AppState>) => {
       base = {};
     }
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...base, ...state }));
+    const newState = { ...base, ...state };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+
+    // Sync to cloud if authenticated
+    if (uid) {
+      saveStateToFirestore(uid, newState);
+    }
 };

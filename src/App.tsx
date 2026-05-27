@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { migrateData, saveState } from './core/storage';
+import { User } from 'firebase/auth';
+import { migrateData, saveState, fetchStateFromFirestore } from './core/storage';
+import AuthGate from './components/AuthGate';
 import { 
   AlertItem, 
   TabType, 
@@ -155,6 +157,10 @@ const INITIAL_LABS_SUGGESTIONS: LabsSuggestion[] = [
 ];
 
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [workspaceMode, setWorkspaceMode] = useState<'cloud' | 'local' | 'demo'>('local');
+  const [isHydrating, setIsHydrating] = useState(true);
+
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
@@ -162,20 +168,20 @@ export default function App() {
     }
     return 'portfolio';
   });
-  const [portfolioValue, setPortfolioValue] = useState<number>(485290.00);
+  const [portfolioValue, setPortfolioValue] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
   // Core App State Matrices
-  const [holdings, setHoldings] = useState<Holding[]>(INITIAL_HOLDINGS);
+  const [holdings, setHoldings] = useState<Holding[]>([]);
   const [dcaPlan, setDcaPlan] = useState<DcaPlan>(INITIAL_DCA_PLAN);
   const [dividendPlan, setDividendPlan] = useState<DividendPlan>(INITIAL_DIVIDEND_PLAN);
   const [dailyBrief, setDailyBrief] = useState<DailyBrief>(INITIAL_DAILY_BRIEF);
-  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [thaiFundNavs, setThaiFundNavs] = useState<ThaiFundNavState[]>(INITIAL_THAI_FUND_NAVS);
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(INITIAL_WATCHLIST);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [labsSuggestions, setLabsSuggestions] = useState<LabsSuggestion[]>(INITIAL_LABS_SUGGESTIONS);
+  const [labsSuggestions, setLabsSuggestions] = useState<LabsSuggestion[]>([]);
   const [notifications, setNotifications] = useState<AlertItem[]>(INITIAL_NOTIFICATION_QUEUE);
   const [latestAiImportPlan, setLatestAiImportPlan] = useState<AiImportSchema | null>(null);
   const [aiImportStatus, setAiImportStatus] = useState<string>('Offline Schema Mode: Default core parameters preloaded.');
@@ -202,43 +208,82 @@ export default function App() {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
 
-  // 1. Initial Migration & State Load
+  // 1. App Hydration Logic (Cloud -> Local -> Migration)
   useEffect(() => {
-    const { state, status, justMigrated } = migrateData();
-    if (state) {
-      if (state.holdings && state.holdings.length > 0) setHoldings(state.holdings);
-      if (state.portfolioValue) setPortfolioValue(state.portfolioValue);
-      if (state.dcaPlan) setDcaPlan(state.dcaPlan);
-      if (state.dividendPlan) setDividendPlan(state.dividendPlan);
-      if (state.activities && state.activities.length > 0) setActivities(state.activities);
-      if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
-      if (state.watchlist && state.watchlist.length > 0) setWatchlist(state.watchlist);
-      if (state.snapshots && state.snapshots.length > 0) setSnapshots(state.snapshots);
-      if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
-      if (state.financialSettings) setFinancialSettings(state.financialSettings);
-    }
-    setMigrationStatus(status);
+    if (!user && workspaceMode !== 'demo') return;
 
-    if (justMigrated) {
-      pushNotification({
-        type: 'success',
-        typeLabel: 'MIGRATION SUCCESS',
-        title: 'Legacy Aequitas workspace restored.',
-        description: 'Existing Aequitas data migrated into the new OS shell.'
-      });
-    }
+    const hydrate = async () => {
+      setIsHydrating(true);
+      const uid = user?.uid;
 
-    // Handle initial route
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      if (path === '/os' || path === '/dashboard') {
-        setActiveTab('dashboard');
+      // Try Cloud first
+      if (uid) {
+        const cloudState = await fetchStateFromFirestore(uid);
+        if (cloudState) {
+          applyState(cloudState);
+          setWorkspaceMode('cloud');
+          setIsHydrating(false);
+          return;
+        }
       }
-    }
-  }, []);
+
+      // Try Namespaced Local Storage
+      const { state, status, justMigrated } = migrateData(uid);
+      if (state) {
+        applyState(state);
+        setMigrationStatus(status);
+        if (uid) setWorkspaceMode('cloud'); // It will sync to cloud now
+      } else if (workspaceMode === 'demo') {
+        // Fallback to Demo Data
+        setHoldings(INITIAL_HOLDINGS);
+        setPortfolioValue(485290.00);
+        setDcaPlan(INITIAL_DCA_PLAN);
+        setDividendPlan(INITIAL_DIVIDEND_PLAN);
+        setDailyBrief(INITIAL_DAILY_BRIEF);
+        setActivities(INITIAL_ACTIVITIES);
+        setWatchlist(INITIAL_WATCHLIST);
+        setLabsSuggestions(INITIAL_LABS_SUGGESTIONS);
+      } else {
+        // New User / Empty State
+        setHoldings([]);
+        setPortfolioValue(0);
+        setActivities([]);
+        setWatchlist([]);
+        setSnapshots([]);
+      }
+
+      if (justMigrated) {
+        pushNotification({
+          type: 'success',
+          typeLabel: 'MIGRATION SUCCESS',
+          title: 'Legacy Aequitas workspace restored.',
+          description: 'Existing Aequitas data migrated into the new OS shell.'
+        });
+      }
+
+      setIsHydrating(false);
+    };
+
+    hydrate();
+  }, [user, workspaceMode]);
+
+  const applyState = (state: any) => {
+    if (state.holdings) setHoldings(state.holdings);
+    if (state.portfolioValue) setPortfolioValue(state.portfolioValue);
+    if (state.dcaPlan) setDcaPlan(state.dcaPlan);
+    if (state.dividendPlan) setDividendPlan(state.dividendPlan);
+    if (state.activities) setActivities(state.activities);
+    if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
+    if (state.watchlist) setWatchlist(state.watchlist);
+    if (state.snapshots) setSnapshots(state.snapshots);
+    if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
+    if (state.financialSettings) setFinancialSettings(state.financialSettings);
+  };
 
   // 2. Persistent Storage Sync
   useEffect(() => {
+    if (isHydrating) return;
+
     saveState({
       holdings,
       portfolioValue,
@@ -251,8 +296,8 @@ export default function App() {
       latestAiImportPlan,
       financialSettings,
       migrationStatus: migrationStatus || undefined
-    });
-  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, latestAiImportPlan, financialSettings, migrationStatus]);
+    }, user?.uid);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, snapshots, latestAiImportPlan, financialSettings, migrationStatus, user, isHydrating]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -426,6 +471,24 @@ export default function App() {
   };
 
   return (
+    <AuthGate onDemoMode={() => setWorkspaceMode('demo')}>
+      {(authUser) => {
+        // Sync auth user to state if not already set
+        if (!user && authUser) setUser(authUser);
+        if (workspaceMode === 'demo' && authUser) setWorkspaceMode('cloud');
+
+        if (isHydrating) {
+          return (
+            <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-[#0F172A]">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">Hydrating Workspace Context...</p>
+              </div>
+            </div>
+          );
+        }
+
+        return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-[#F1F5F9] font-sans transition-colors duration-300 dot-grid">
       
       {/* 1. Left side Persistent Sidebar */}
@@ -451,6 +514,8 @@ export default function App() {
         onClearNotification={handleClearNotif}
         onClearAllNotifications={handleClearAllNotifs}
         migrationStatus={migrationStatus}
+        user={user}
+        workspaceMode={workspaceMode}
       />
 
       {/* 3. Main content body wrapper */}
@@ -595,6 +660,20 @@ export default function App() {
               migrationStatus={migrationStatus}
               financialSettings={financialSettings}
               onUpdateFinancialSettings={setFinancialSettings}
+              workspaceMode={workspaceMode}
+              onImportLegacyToCloud={() => {
+                const { state, status } = migrateData(); // Migrate from global storage
+                if (state) {
+                  applyState(state);
+                  setMigrationStatus(status);
+                  pushNotification({
+                    type: 'success',
+                    typeLabel: 'CLOUD IMPORT',
+                    title: 'Legacy Data Bound to Cloud',
+                    description: 'Legacy localStorage has been imported and bound to your authenticated workspace.'
+                  });
+                }
+              }}
             />
           )}
 
@@ -664,5 +743,8 @@ export default function App() {
       )}
 
     </div>
+        );
+      }}
+    </AuthGate>
   );
 }
