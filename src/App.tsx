@@ -174,6 +174,7 @@ export default function App() {
   const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
   const [thaiFundNavs, setThaiFundNavs] = useState<ThaiFundNavState[]>(INITIAL_THAI_FUND_NAVS);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(INITIAL_WATCHLIST);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [labsSuggestions, setLabsSuggestions] = useState<LabsSuggestion[]>(INITIAL_LABS_SUGGESTIONS);
   const [notifications, setNotifications] = useState<AlertItem[]>(INITIAL_NOTIFICATION_QUEUE);
   const [latestAiImportPlan, setLatestAiImportPlan] = useState<AiImportSchema | null>(null);
@@ -212,6 +213,7 @@ export default function App() {
       if (state.activities && state.activities.length > 0) setActivities(state.activities);
       if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs);
       if (state.watchlist && state.watchlist.length > 0) setWatchlist(state.watchlist);
+      if (state.snapshots && state.snapshots.length > 0) setSnapshots(state.snapshots);
       if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan);
       if (state.financialSettings) setFinancialSettings(state.financialSettings);
     }
@@ -245,6 +247,7 @@ export default function App() {
       activities,
       thaiFundNavs,
       watchlist,
+      snapshots,
       latestAiImportPlan,
       financialSettings,
       migrationStatus: migrationStatus || undefined
@@ -549,6 +552,8 @@ export default function App() {
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               holdings={holdings}
+              snapshots={snapshots}
+              onUpdateSnapshots={setSnapshots}
             />
           )}
 

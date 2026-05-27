@@ -249,11 +249,19 @@ export interface StrategyArchetype {
   active?: boolean;
 }
 
+export interface MigrationCoverageReport {
+  detected: string[];
+  migrated: string[];
+  ignored: string[];
+  unsupported: string[];
+}
+
 export interface MigrationStatus {
   source: 'old-local-storage' | 'new-state' | 'sample-state';
   migratedAt: string | null;
   detectedLegacyKeys?: string[];
   unmappedLegacyData?: Record<string, any>;
+  coverageReport?: MigrationCoverageReport;
   success?: boolean;
   warnings: string[];
 }
