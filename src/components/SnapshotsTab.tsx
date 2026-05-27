@@ -10,6 +10,8 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
+import { FinancialSettings } from '../types';
+import { formatCurrency } from '../core/utils';
 
 interface SnapshotItem {
   id: string;
@@ -27,6 +29,7 @@ interface SnapshotsTabProps {
   holdings?: any[];
   snapshots: any[];
   onUpdateSnapshots: (snapshots: any[]) => void;
+  financialSettings: FinancialSettings;
 }
 
 export default function SnapshotsTab({
@@ -35,7 +38,8 @@ export default function SnapshotsTab({
   onTriggerAlert,
   holdings,
   snapshots,
-  onUpdateSnapshots
+  onUpdateSnapshots,
+  financialSettings
 }: SnapshotsTabProps) {
 
   const [newSnapshotName, setNewSnapshotName] = useState('');
@@ -125,7 +129,7 @@ export default function SnapshotsTab({
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Active Sandbox Size</span>
-          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">${portfolioValue.toLocaleString()}</span>
+          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{formatCurrency(portfolioValue, financialSettings)}</span>
         </div>
 
         {/* Local Backup Action block */}
@@ -178,7 +182,7 @@ export default function SnapshotsTab({
                 </div>
                 <div className="flex justify-between">
                   <span>Balance Record:</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-350">${portfolioValue.toLocaleString()}</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-350">{formatCurrency(portfolioValue, financialSettings)}</span>
                 </div>
               </div>
             </div>
@@ -229,7 +233,7 @@ export default function SnapshotsTab({
                   <div className="flex items-center gap-4 justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
                     <div className="text-right shrink-0">
                       <span className="text-[9px] uppercase font-bold text-slate-400 block">ARCHIVED VALUE</span>
-                      <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">${snap.value.toLocaleString()}</span>
+                      <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(snap.value, financialSettings)}</span>
                     </div>
 
                     <div className="flex gap-2">
