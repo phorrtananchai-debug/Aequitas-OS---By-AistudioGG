@@ -68,23 +68,27 @@ export default function SnapshotsTab({
   };
 
   const handleApplySnapshot = (snap: SnapshotItem) => {
-    onUpdatePortfolio(snap.value);
-    onTriggerAlert({
-      type: 'success',
-      typeLabel: 'STATE RESTORED',
-      title: 'Local Snapshot Instated',
-      description: `Active dashboard parameters calibrated back to state "${snap.name}".`
-    });
+    if (window.confirm(`Are you sure you want to restore "${snap.name}"? Current unsaved changes will be lost.`)) {
+      onUpdatePortfolio(snap.value);
+      onTriggerAlert({
+        type: 'success',
+        typeLabel: 'STATE RESTORED',
+        title: 'Local Snapshot Instated',
+        description: `Active dashboard parameters calibrated back to state "${snap.name}".`
+      });
+    }
   };
 
   const handleDeleteSnapshot = (id: string, name: string) => {
-    onUpdateSnapshots(snapshots.filter(s => s.id !== id));
-    onTriggerAlert({
-      type: 'advisory',
-      typeLabel: 'SNAPSHOT PRUNED',
-      title: 'Record Removed',
-      description: `State archive "${name}" has been permanently purged.`
-    });
+    if (window.confirm(`Permanently delete snapshot "${name}"?`)) {
+      onUpdateSnapshots(snapshots.filter(s => s.id !== id));
+      onTriggerAlert({
+        type: 'advisory',
+        typeLabel: 'SNAPSHOT PRUNED',
+        title: 'Record Removed',
+        description: `State archive "${name}" has been permanently purged.`
+      });
+    }
   };
 
   const handleDownloadBackup = () => {

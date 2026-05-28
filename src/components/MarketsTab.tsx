@@ -14,7 +14,10 @@ import {
   RefreshCw,
   Sliders,
   AlertCircle,
-  ShieldAlert
+  ShieldAlert,
+  Trash2,
+  ArrowUpDown,
+  Filter
 } from 'lucide-react';
 import { Holding, ThaiFundNavState, AlertItem, FinancialSettings } from '../types';
 import { formatCurrency } from '../core/utils';
@@ -39,9 +42,15 @@ export default function MarketsTab({
   financialSettings
 }: HoldingsTabProps) {
   const [filterType, setFilterType] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('value');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isAddingAsset, setIsAddingAsset] = useState<boolean>(false);
   
-  // Inline edit state values
+  // Inline edit / Add state values
+  const [editTicker, setEditTicker] = useState<string>('');
+  const [editName, setEditName] = useState<string>('');
+  const [editType, setEditType] = useState<string>('US Stock');
   const [editUnits, setEditUnits] = useState<string>('');
   const [editAvgCost, setEditAvgCost] = useState<string>('');
   const [editPrice, setEditPrice] = useState<string>('');
@@ -53,6 +62,9 @@ export default function MarketsTab({
 
   const handleStartEdit = (h: Holding) => {
     setEditingId(h.id);
+    setEditTicker(h.ticker);
+    setEditName(h.name);
+    setEditType(h.type);
     setEditUnits(h.units.toString());
     setEditAvgCost(h.avgCost.toString());
     setEditPrice(h.currentPrice.toString());
@@ -83,6 +95,9 @@ export default function MarketsTab({
       if (h.id === id) {
         return {
           ...h,
+          ticker: editTicker.toUpperCase(),
+          name: editName,
+          type: editType as any,
           units: unitsVal,
           avgCost: avgCostVal,
           currentPrice: currentPriceVal,
@@ -171,13 +186,107 @@ export default function MarketsTab({
     });
   };
 
+  const handleAddAsset = (e: React.FormEvent) => {
+    e.preventDefault();
+    const unitsVal = parseFloat(editUnits);
+    const avgCostVal = parseFloat(editAvgCost);
+    const currentPriceVal = parseFloat(editPrice);
+
+    if (!editTicker || isNaN(unitsVal) || isNaN(avgCostVal) || isNaN(currentPriceVal)) {
+      onTriggerAlert({
+        type: 'high',
+        typeLabel: 'VALIDATION ACTION',
+        title: 'Missing Parameters',
+        description: 'Please provide ticker, units, cost and price.'
+      });
+      return;
+    }
+
+    const valueCalculated = unitsVal * currentPriceVal;
+    const initialCostVal = unitsVal * avgCostVal;
+    const calculatedGain = valueCalculated - initialCostVal;
+    const gainPct = initialCostVal > 0 ? (calculatedGain / initialCostVal) * 100 : 0;
+
+    const newHolding: Holding = {
+      id: `h-${Date.now()}`,
+      ticker: editTicker.toUpperCase(),
+      name: editName || editTicker.toUpperCase(),
+      type: editType as any,
+      units: unitsVal,
+      avgCost: avgCostVal,
+      currentPrice: currentPriceVal,
+      value: parseFloat(valueCalculated.toFixed(2)),
+      gainLoss: parseFloat(calculatedGain.toFixed(2)),
+      gainLossPct: parseFloat(gainPct.toFixed(2)),
+      allocationPct: 0,
+      notes: editNotes
+    };
+
+    const nextHoldings = [...holdings, newHolding];
+    const totalSum = nextHoldings.reduce((sum, current) => sum + current.value, 0);
+    const finalizedHoldings = nextHoldings.map(h => ({
+      ...h,
+      allocationPct: parseFloat(((h.value / totalSum) * 100).toFixed(2))
+    }));
+
+    onUpdateHoldings(finalizedHoldings);
+    setIsAddingAsset(false);
+    resetForm();
+    onTriggerAlert({
+      type: 'success',
+      typeLabel: 'ASSET ADDED',
+      title: 'New Position Logged',
+      description: `${newHolding.ticker} successfully added to canonical ledger.`
+    });
+  };
+
+  const handleDeleteAsset = (id: string, ticker: string) => {
+    if (window.confirm(`Are you sure you want to delete ${ticker} from your holdings? This action is permanent.`)) {
+      const nextHoldings = holdings.filter(h => h.id !== id);
+      const totalSum = nextHoldings.reduce((sum, current) => sum + current.value, 0);
+      const finalizedHoldings = nextHoldings.map(h => ({
+        ...h,
+        allocationPct: parseFloat(((h.value / totalSum) * 100).toFixed(2))
+      }));
+      onUpdateHoldings(finalizedHoldings);
+      onTriggerAlert({
+        type: 'advisory',
+        typeLabel: 'ASSET DELETED',
+        title: 'Position Removed',
+        description: `${ticker} has been purged from the local OS ledger.`
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setEditTicker('');
+    setEditName('');
+    setEditType('US Stock');
+    setEditUnits('');
+    setEditAvgCost('');
+    setEditPrice('');
+    setEditNotes('');
+  };
+
   const categories = [
     { id: 'all', label: 'All Assets' },
-    { id: 'us stock', label: 'US Stocks' },
-    { id: 'us etf', label: 'US ETFs' },
-    { id: 'thai mutual fund', label: 'Thai Funds' },
-    { id: 'cash', label: 'Cash & Others' }
+    { id: 'US Stock', label: 'Quality Growth' },
+    { id: 'US ETF', label: 'Core ETF' },
+    { id: 'Dividend ETF', label: 'Dividend Cashflow' },
+    { id: 'Thai Mutual Fund', label: 'Thai Funds' },
+    { id: 'Thai RMF', label: 'Thai RMF' },
+    { id: 'Sandbox Asset', label: 'Sandbox' },
+    { id: 'Cash', label: 'Cash & Others' }
   ];
+
+  const handleSort = (key: string) => {
+    if (sortBy === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(key);
+      setSortOrder('desc');
+    }
+  };
 
   const filteredHoldings = holdings.filter(h => {
     const matchesSearch = 
@@ -186,11 +295,47 @@ export default function MarketsTab({
       (h.notes && h.notes.toLowerCase().includes(searchQuery.toLowerCase()));
     
     if (filterType === 'all') return matchesSearch;
-    if (filterType === 'cash') {
+    if (filterType === 'Cash') {
       return matchesSearch && (h.type === 'Cash' || h.type === 'Sandbox Asset');
     }
-    return matchesSearch && h.type.toLowerCase() === filterType;
+    return matchesSearch && h.type === filterType;
+  }).sort((a, b) => {
+    let valA: any = a[sortBy as keyof Holding];
+    let valB: any = b[sortBy as keyof Holding];
+
+    if (sortBy === 'value') {
+      valA = a.value;
+      valB = b.value;
+    } else if (sortBy === 'gainLossPct') {
+      valA = a.gainLossPct;
+      valB = b.gainLossPct;
+    } else if (sortBy === 'allocationPct') {
+      valA = a.allocationPct;
+      valB = b.allocationPct;
+    }
+
+    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
   });
+
+  // Summary Metrics
+  const topOverweight = holdings.length > 0 ? [...holdings].sort((a, b) => b.allocationPct - a.allocationPct)[0] : null;
+  const topGainer = holdings.length > 0 ? [...holdings].sort((a, b) => b.gainLossPct - a.gainLossPct)[0] : null;
+  const topLoser = holdings.length > 0 ? [...holdings].sort((a, b) => a.gainLossPct - b.gainLossPct)[0] : null;
+  const missingPrices = holdings.filter(h => h.currentPrice === 0).length;
+
+  const getTypeStyle = (type: string) => {
+    switch (type) {
+      case 'US ETF': return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+      case 'US Stock': return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300';
+      case 'Dividend ETF': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300';
+      case 'Thai Mutual Fund':
+      case 'Thai RMF': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
+      case 'Sandbox Asset': return 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+      default: return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+    }
+  };
 
   return (
     <div className="space-y-8 animate-fade-in text-slate-850 dark:text-[#F4EEE4] pb-12 font-sans">
@@ -210,14 +355,50 @@ export default function MarketsTab({
             </p>
           </div>
 
-          {!financialSettings.finnhubKey && (
-            <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-500/20 rounded-xl flex items-center gap-2 mb-1 animate-pulse">
-              <ShieldAlert className="text-amber-600 dark:text-amber-400" size={14} />
-              <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">Manual Price Mode Active</span>
-            </div>
-          )}
+          <div className="flex gap-2">
+            {!financialSettings.finnhubKey && (
+              <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-500/20 rounded-xl flex items-center gap-2 mb-1 animate-pulse">
+                <ShieldAlert className="text-amber-600 dark:text-amber-400" size={14} />
+                <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">Manual Price Mode Active</span>
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setIsAddingAsset(true);
+                resetForm();
+              }}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5 mb-1"
+            >
+              <Plus size={14} />
+              Add Asset
+            </button>
+          </div>
         </div>
       </section>
+
+      {/* Summary Chips Row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="p-3 bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl flex flex-col justify-between">
+          <span className="text-[9px] uppercase font-bold text-slate-400">Total Positions</span>
+          <span className="text-lg font-black text-slate-900 dark:text-white">{holdings.length}</span>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl flex flex-col justify-between">
+          <span className="text-[9px] uppercase font-bold text-slate-400">Top Overweight</span>
+          <span className="text-xs font-black text-blue-600 truncate">{topOverweight?.ticker || 'N/A'}</span>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl flex flex-col justify-between">
+          <span className="text-[9px] uppercase font-bold text-slate-400">Top Gainer</span>
+          <span className="text-xs font-black text-emerald-600 truncate">{topGainer?.ticker || 'N/A'} (+{topGainer?.gainLossPct}%)</span>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl flex flex-col justify-between">
+          <span className="text-[9px] uppercase font-bold text-slate-400">Top Loser</span>
+          <span className="text-xs font-black text-rose-600 truncate">{topLoser?.ticker || 'N/A'} ({topLoser?.gainLossPct}%)</span>
+        </div>
+        <div className="p-3 bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl flex flex-col justify-between">
+          <span className="text-[9px] uppercase font-bold text-slate-400">Stale Prices</span>
+          <span className="text-lg font-black text-amber-600">{missingPrices}</span>
+        </div>
+      </div>
 
       {/* Thai Fund NAV Bridge Panel (Calming bento widget) */}
       <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden flex flex-col justify-between border border-slate-800/40">
@@ -300,47 +481,195 @@ export default function MarketsTab({
         <span className="text-xs text-slate-450 font-mono">Positions Filtered: {filteredHoldings.length} Assets</span>
       </div>
 
+      {/* Add Asset Form Overlay */}
+      {isAddingAsset && (
+        <div className="p-6 bg-blue-50/30 dark:bg-slate-900/40 border border-blue-200/50 dark:border-slate-800 rounded-3xl animate-slide-in">
+          <form onSubmit={handleAddAsset} className="space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-blue-100 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                <Plus size={16} />
+                Create New position Entry
+              </h3>
+              <button onClick={() => setIsAddingAsset(false)} className="text-slate-400 hover:text-slate-600">×</button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Ticker</label>
+                <input
+                  type="text"
+                  value={editTicker}
+                  onChange={(e) => setEditTicker(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono"
+                  placeholder="e.g. MSFT"
+                />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Asset Name</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs"
+                  placeholder="Microsoft Corporation"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Sector Layer</label>
+                <select
+                  value={editType}
+                  onChange={(e) => setEditType(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs"
+                >
+                  <option value="US Stock">Quality Growth</option>
+                  <option value="US ETF">Core ETF</option>
+                  <option value="Dividend ETF">Dividend Cashflow</option>
+                  <option value="Thai Mutual Fund">Thai Mutual Fund</option>
+                  <option value="Thai RMF">Thai RMF</option>
+                  <option value="Sandbox Asset">Sandbox Layer</option>
+                  <option value="Cash">Cash Buffer</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Units</label>
+                <input
+                  type="number" step="0.0001"
+                  value={editUnits}
+                  onChange={(e) => setEditUnits(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Avg Cost (USD)</label>
+                <input
+                  type="number" step="0.01"
+                  value={editAvgCost}
+                  onChange={(e) => setEditAvgCost(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase text-slate-400">Current Price (Manual)</label>
+                <input
+                  type="number" step="0.01"
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  className="w-full bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-mono"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsAddingAsset(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-blue-600/20"
+              >
+                Register Position
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* Main Holdings parameters ledger table */}
       <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 dark:border-slate-800/5 text-[10px] tracking-widest font-black text-slate-400 uppercase">
-                <th className="px-6 py-4">TICKER</th>
-                <th className="px-6 py-4">ASSET NAME</th>
-                <th className="px-6 py-4">SECTOR TYPE</th>
+                <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('ticker')}>
+                  <div className="flex items-center gap-1.5">TICKER <ArrowUpDown size={10} /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('name')}>
+                   <div className="flex items-center gap-1.5">ASSET NAME <ArrowUpDown size={10} /></div>
+                </th>
+                <th className="px-6 py-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('type')}>
+                   <div className="flex items-center gap-1.5">SECTOR TYPE <ArrowUpDown size={10} /></div>
+                </th>
                 <th className="px-6 py-4 font-mono text-right">UNITS HELD</th>
                 <th className="px-6 py-4 font-mono text-right">AVG COST (USD)</th>
                 <th className="px-6 py-4 font-mono text-right">MARKET NAV</th>
-                <th className="px-6 py-4 font-mono text-right">SUBTOTAL STATE</th>
-                <th className="px-6 py-4 text-center">ALLOCT %</th>
+                <th className="px-6 py-4 font-mono text-right cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('value')}>
+                   <div className="flex items-center gap-1.5 justify-end">SUBTOTAL STATE <ArrowUpDown size={10} /></div>
+                </th>
+                <th className="px-6 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('allocationPct')}>
+                   <div className="flex items-center gap-1.5 justify-center">ALLOCT % <ArrowUpDown size={10} /></div>
+                </th>
                 <th className="px-6 py-4 text-center">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-850/40 text-xs font-sans">
               {filteredHoldings.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-xs text-slate-400">No core assets found matching active filter.</td>
+                  <td colSpan={9} className="px-6 py-12 text-center text-xs text-slate-400 italic">No core assets found matching active parameters.</td>
                 </tr>
               ) : (
                 filteredHoldings.map((h) => {
                   const isEditing = editingId === h.id;
                   const isGain = h.gainLoss >= 0;
+                  const isNeutral = h.gainLoss === 0;
+
                   return (
                     <tr key={h.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-blue-600 dark:text-blue-400">{h.ticker}</td>
+                      <td className="px-6 py-4 font-mono font-bold text-blue-600 dark:text-blue-400">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editTicker}
+                            onChange={(e) => setEditTicker(e.target.value)}
+                            className="bg-slate-50 dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs w-20 font-mono"
+                          />
+                        ) : h.ticker}
+                      </td>
                       
                       <td className="px-6 py-4">
-                        <span className="font-bold text-slate-850 dark:text-slate-200">{h.name}</span>
-                        {h.notes && (
-                          <span className="block text-[10px] text-slate-400 mt-0.5 max-w-xs truncate">{h.notes}</span>
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="bg-slate-50 dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-xs w-full"
+                          />
+                        ) : (
+                          <>
+                            <span className="font-bold text-slate-850 dark:text-slate-200">{h.name}</span>
+                            {h.notes && (
+                              <span className="block text-[10px] text-slate-400 mt-0.5 max-w-xs truncate">{h.notes}</span>
+                            )}
+                          </>
                         )}
                       </td>
 
                       <td className="px-6 py-4">
-                        <span className="text-[10px] uppercase font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                          {h.type}
-                        </span>
+                        {isEditing ? (
+                          <select
+                            value={editType}
+                            onChange={(e) => setEditType(e.target.value)}
+                            className="bg-slate-50 dark:bg-slate-900 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[10px] uppercase font-bold w-full"
+                          >
+                            <option value="US Stock">Quality Growth</option>
+                            <option value="US ETF">Core ETF</option>
+                            <option value="Dividend ETF">Dividend Cashflow</option>
+                            <option value="Thai Mutual Fund">Thai Mutual Fund</option>
+                            <option value="Thai RMF">Thai RMF</option>
+                            <option value="Sandbox Asset">Sandbox Layer</option>
+                            <option value="Cash">Cash Buffer</option>
+                          </select>
+                        ) : (
+                          <span className={`text-[9px] uppercase font-black px-2.5 py-0.5 rounded-full ${getTypeStyle(h.type)}`}>
+                            {h.type}
+                          </span>
+                        )}
                       </td>
 
                       {/* Units */}
@@ -353,7 +682,7 @@ export default function MarketsTab({
                             className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
                         ) : (
-                          h.units.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                          h.units.toLocaleString(undefined, { maximumFractionDigits: 4 })
                         )}
                       </td>
 
@@ -388,8 +717,10 @@ export default function MarketsTab({
                       {/* Computed Subtotal Value */}
                       <td className="px-6 py-4 text-right">
                         <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(h.value, financialSettings)}</span>
-                        <span className={`block font-mono text-[9px] uppercase font-semibold mt-0.5 ${isGain ? 'text-emerald-650' : 'text-rose-600'}`}>
-                          {isGain ? '▲' : '▼'} {isGain ? '+' : ''}{h.gainLossPct}%
+                        <span className={`block font-mono text-[9px] uppercase font-semibold mt-0.5 ${
+                          isNeutral ? 'text-slate-400' : isGain ? 'text-emerald-600' : 'text-rose-500'
+                        }`}>
+                          {isNeutral ? '' : isGain ? '▲' : '▼'} {isNeutral ? 'Neutral' : `${isGain ? '+' : ''}${h.gainLossPct}%`}
                         </span>
                       </td>
 
@@ -404,25 +735,32 @@ export default function MarketsTab({
                           <div className="flex gap-2 justify-center items-center">
                             <button 
                               onClick={() => handleSaveEdit(h.id)}
-                              className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold uppercase transition-all"
+                              className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all"
                             >
-                              Save
+                              <Check size={14} />
                             </button>
                             <button 
                               onClick={() => setEditingId(null)}
-                              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg text-[10px] font-semibold uppercase transition-all"
+                              className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg transition-all"
                             >
-                              Cancel
+                              <Plus className="rotate-45" size={14} />
                             </button>
                           </div>
                         ) : (
                           <div className="flex gap-2 justify-center items-center">
                             <button 
                               onClick={() => handleStartEdit(h)}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-transparent"
-                              title="Edit parameters"
+                              className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 bg-transparent transition-colors"
+                              title="Edit position"
                             >
                               <Edit3 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAsset(h.id, h.ticker)}
+                              className="p-1.5 text-slate-300 hover:text-rose-600 bg-transparent transition-colors"
+                              title="Delete entry"
+                            >
+                              <Trash2 size={14} />
                             </button>
                           </div>
                         )}
