@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User } from 'firebase/auth';
-import { migrateData, saveState, fetchStateFromFirestore } from './core/storage';
+import { migrateData, saveState, fetchStateFromFirestore, mapBackupToState } from './core/storage';
+import { getCanonicalBackupState } from './core/recovery';
 import AuthGate from './components/AuthGate';
 import { 
   AlertItem, 
@@ -720,6 +721,45 @@ export default function App() {
                   });
                 }
                 setIsHydrating(false);
+              }}
+              onRecoverFromBackup={() => {
+                const recovered = getCanonicalBackupState();
+
+                // 1. Create Golden Recovery Snapshot
+                const goldenSnapshot: Snapshot = {
+                  id: `snap-golden-${Date.now()}`,
+                  name: 'Golden Recovery Snapshot',
+                  timestamp: new Date().toISOString(),
+                  totalValue: recovered.portfolioValue || 0,
+                  holdingsCount: recovered.holdings?.length || 0,
+                  allocationBuckets: [], // Simplified for now
+                  rawStateJson: JSON.stringify(recovered)
+                };
+
+                const nextSnapshots = [goldenSnapshot, ...snapshots];
+
+                // 2. Apply state
+                applyState({
+                  ...recovered,
+                  snapshots: nextSnapshots,
+                  migrationStatus: {
+                    source: 'new-state',
+                    migratedAt: new Date().toISOString(),
+                    warnings: ['Restored from canonical backup']
+                  }
+                });
+
+                // 3. Disable Demo Mode if active
+                if (workspaceMode === 'demo') {
+                  setWorkspaceMode('cloud');
+                }
+
+                pushNotification({
+                  type: 'success',
+                  typeLabel: 'SYSTEM RECOVERED',
+                  title: 'Canonical Backup Restored',
+                  description: 'Workspace has been successfully recovered. Golden Snapshot created.'
+                });
               }}
             />
           )}

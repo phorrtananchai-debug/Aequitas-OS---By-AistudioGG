@@ -210,6 +210,29 @@ export interface AlertItem {
   description: string;
 }
 
+export interface AlertRule {
+  id: string;
+  ticker: string;
+  symbol: string;
+  triggerType: string;
+  condition: 'above' | 'below';
+  targetPrice: number;
+  message: string;
+  enabled: boolean;
+  status: 'active' | 'triggered';
+  lastTriggeredAt: string | null;
+}
+
+export interface DividendHistoryItem {
+  id: string;
+  date: string;
+  ticker: string;
+  amountUSD: number;
+  taxUSD: number;
+  netUSD: number;
+  note?: string;
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';

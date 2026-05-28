@@ -1,5 +1,6 @@
 import React, { useState, FormEvent } from 'react';
 import { MigrationStatus, FinancialSettings } from '../types';
+import { getCanonicalBackupSummary } from '../core/recovery';
 import { 
   Settings as SettingsIcon, 
   ShieldAlert, 
@@ -38,6 +39,7 @@ interface SettingsTabProps {
   onUpdateFinancialSettings: (settings: FinancialSettings) => void;
   onImportLegacyToCloud?: () => void;
   onDiscoverCloudData?: () => void;
+  onRecoverFromBackup?: () => void;
   workspaceMode: 'cloud' | 'local' | 'demo';
 }
 
@@ -50,6 +52,7 @@ export default function SettingsTab({
   onUpdateFinancialSettings,
   onImportLegacyToCloud,
   onDiscoverCloudData,
+  onRecoverFromBackup,
   workspaceMode
 }: SettingsTabProps) {
   // Active settings tab category
@@ -86,6 +89,9 @@ export default function SettingsTab({
   // Sync & Storage
   const [gdriveSync, setGdriveSync] = useState<boolean>(false);
   const [brokerFuture, setBrokerFuture] = useState<boolean>(false);
+
+  // Recovery
+  const [backupSummary] = useState(getCanonicalBackupSummary());
 
   // Labs
   const [experimentalFeatures, setExperimentalFeatures] = useState<boolean>(false);
@@ -798,6 +804,52 @@ This will overwrite your existing cloud workspace.`;
                             )}
                           </tbody>
                         </table>
+                      </div>
+                    </div>
+
+                    {/* CANONICAL RECOVERY BLOCK */}
+                    <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-black uppercase text-amber-600 block">Canonical System Recovery</span>
+                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Full OS Backup Found</h4>
+                          <p className="text-[11px] text-slate-500 leading-relaxed">
+                            A verified full system backup from <strong>{new Date(backupSummary.exportedAt).toLocaleDateString()}</strong> is available for recovery.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const confirmText = `SYSTEM RECOVERY PROTOCOL
+------------------------
+This will restore your workspace from the canonical backup:
+- Positions: ${backupSummary.holdingsCount}
+- Value: $${backupSummary.totalValue.toLocaleString()}
+- Symbols: ${backupSummary.symbols.join(', ')}
+
+WARNING: This will replace your current workspace state and create a Golden Recovery Snapshot.
+
+Proceed with recovery?`;
+                            if (window.confirm(confirmText)) {
+                              onRecoverFromBackup?.();
+                            }
+                          }}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                        >
+                          <RefreshCw size={13} />
+                          Confirm Recovery
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 pt-2">
+                        <div className="px-3 py-2 bg-white dark:bg-slate-900/50 rounded-xl border border-amber-200/30">
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Assets</span>
+                          <span className="text-sm font-black text-amber-600">{backupSummary.holdingsCount}</span>
+                        </div>
+                        <div className="px-3 py-2 bg-white dark:bg-slate-900/50 rounded-xl border border-amber-200/30 col-span-2">
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Total Valuation</span>
+                          <span className="text-sm font-black text-amber-600">${backupSummary.totalValue.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
 
