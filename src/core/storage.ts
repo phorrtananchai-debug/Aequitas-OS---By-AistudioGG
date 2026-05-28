@@ -20,6 +20,8 @@ export interface AppState {
   migrationStatus: MigrationStatus;
   latestAiImportPlan: AiImportSchema | null;
   financialSettings: FinancialSettings;
+  alertRules?: any[]; // Added for full backup support
+  dividendHistory?: any[]; // Added for full backup support
 }
 
 export const fetchStateFromFirestore = async (uid: string): Promise<Partial<AppState> | null> => {
@@ -292,6 +294,84 @@ export const migrateData = (uid?: string) => {
       migratedAt: null,
       warnings: []
     } as MigrationStatus
+  };
+};
+
+export const mapBackupToState = (backupData: any): Partial<AppState> => {
+  const d = backupData;
+
+  // 1. Map Portfolio
+  const holdings: Holding[] = (d.aequitas_portfolio || []).map((h: any) => ({
+    id: h.id || `h-${Date.now()}-${Math.random()}`,
+    ticker: h.ticker,
+    name: h.companyName || h.ticker,
+    type: h.section === 'Core ETF' ? 'US ETF' :
+          h.section === 'Dividend Cashflow' ? 'Dividend ETF' :
+          h.section === 'Sandbox High Risk' ? 'Sandbox Asset' : 'US Stock',
+    value: h.marketValue || (h.shares * h.currentPrice) || 0,
+    units: h.shares || h.amount || 0,
+    avgCost: h.avgCost || 0,
+    currentPrice: h.currentPrice || 0,
+    gainLoss: (h.shares * h.currentPrice) - (h.shares * h.avgCost) || 0,
+    gainLossPct: h.avgCost > 0 ? ((h.currentPrice - h.avgCost) / h.avgCost) * 100 : 0,
+    allocationPct: 0, // Will be recalculated
+    dividendYield: 0, // Not directly in portfolio item usually
+    notes: h.thesis || ''
+  }));
+
+  const portfolioValue = holdings.reduce((sum, h) => sum + h.value, 0);
+  holdings.forEach(h => {
+    h.allocationPct = portfolioValue > 0 ? (h.value / portfolioValue) * 100 : 0;
+  });
+
+  // 2. Map Watchlist
+  const watchlist = (d.aequitas_watchlist || []).map((w: any) => ({
+    id: w.id || `w-${Date.now()}-${Math.random()}`,
+    ticker: w.ticker,
+    name: w.name || w.ticker,
+    targetEntryZone: w.targetEntry || '',
+    notes: w.notes || '',
+    aiObservation: '',
+    riskLevel: 'Medium'
+  }));
+
+  // 3. Map Settings & FX
+  const financialSettings: FinancialSettings = {
+    baseCurrency: d.aequitas_display_currency || d.aequitas_settings?.displayCurrency || 'USD',
+    usdThbRate: d.aequitas_usd_thb_rate || d.aequitas_settings?.usdThbRate || 36.45,
+    showThbTotals: true,
+    preferThaiNav: true
+  };
+
+  // 4. Map AI Plan
+  const latestAiImportPlan: AiImportSchema | null = d.aequitas_ai_trading_plan ? {
+    portfolioSummary: d.aequitas_ai_trading_plan.portfolioSummary || {},
+    assetPlans: d.aequitas_ai_trading_plan.assetPlans || [],
+    allocationPlan: {
+      buckets: [],
+      rebalanceGuidance: '',
+      priorityActions: []
+    },
+    dcaPlan: {
+      items: []
+    },
+    dividendNotes: '',
+    dailyBrief: {
+      todayObservation: '',
+      todayReviewActions: [],
+      riskWarnings: []
+    },
+    labsSuggestions: []
+  } : null;
+
+  return {
+    holdings,
+    portfolioValue,
+    watchlist,
+    financialSettings,
+    latestAiImportPlan,
+    alertRules: d.aequitas_alert_rules || [],
+    dividendHistory: d.aequitas_dividend_ledger || []
   };
 };
 
