@@ -211,7 +211,7 @@ export default function SnapshotsTab({
                 <p className="text-xs font-semibold">No saved snapshot states recorded yet.</p>
               </div>
             ) : (
-              snapshots.map((snap) => (
+              (snapshots || []).map((snap) => (
                 <div 
                   key={snap.id} 
                   className="p-5 bg-white dark:bg-slate-900/40 border border-slate-150 dark:border-slate-800 rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-blue-300 dark:hover:border-slate-600 transition-all font-sans"

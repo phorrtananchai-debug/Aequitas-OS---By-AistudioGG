@@ -10,7 +10,9 @@ interface WatchlistTabProps {
 export default function WatchlistTab({ watchlist, onTriggerAlert }: WatchlistTabProps) {
   const [filterRisk, setFilterType] = useState<string>('all');
 
-  const filteredWatchlist = watchlist.filter(item => {
+  const safeWatchlist = watchlist || [];
+
+  const filteredWatchlist = safeWatchlist.filter(item => {
     if (filterRisk === 'all') return true;
     return item.riskLevel.toLowerCase() === filterRisk.toLowerCase();
   });
@@ -53,7 +55,7 @@ export default function WatchlistTab({ watchlist, onTriggerAlert }: WatchlistTab
             No assets found in the selected risk category.
           </div>
         ) : (
-          filteredWatchlist.map((item) => (
+          (filteredWatchlist || []).map((item) => (
             <div key={item.id} className="glass-panel p-6 rounded-3xl border border-slate-200/60 dark:border-slate-800/25 shadow-sm hover:shadow-md transition-all flex flex-col justify-between bg-white dark:bg-slate-900/20">
               <div>
                 <div className="flex justify-between items-start mb-4">
