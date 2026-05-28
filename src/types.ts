@@ -301,4 +301,5 @@ export interface FinancialSettings {
   usdThbRate: number;
   showThbTotals: boolean;
   preferThaiNav: boolean;
+  finnhubKey?: string;
 }

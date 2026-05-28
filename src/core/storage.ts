@@ -240,7 +240,8 @@ export const migrateData = (uid?: string) => {
         baseCurrency: oldData.aequitas_settings?.baseCurrency || oldData.settings?.baseCurrency || 'USD',
         usdThbRate: Number(oldData.aequitas_usd_thb_rate || oldData.aequitas_settings?.usdThbRate || oldData.settings?.usdThbRate || 36.45),
         showThbTotals: oldData.aequitas_settings?.showThbTotals ?? oldData.settings?.showThbTotals ?? true,
-        preferThaiNav: oldData.aequitas_settings?.preferThaiNav ?? oldData.settings?.preferThaiNav ?? true
+        preferThaiNav: oldData.aequitas_settings?.preferThaiNav ?? oldData.settings?.preferThaiNav ?? true,
+        finnhubKey: oldData.aequitas_settings?.finnhubKey || oldData.settings?.finnhubKey || ''
       }
     };
 
@@ -340,7 +341,8 @@ export const mapBackupToState = (backupData: any): Partial<AppState> => {
     baseCurrency: d.aequitas_display_currency || d.aequitas_settings?.displayCurrency || 'USD',
     usdThbRate: d.aequitas_usd_thb_rate || d.aequitas_settings?.usdThbRate || 36.45,
     showThbTotals: true,
-    preferThaiNav: true
+    preferThaiNav: true,
+    finnhubKey: d.aequitas_settings?.finnhubKey || ''
   };
 
   // 4. Map AI Plan

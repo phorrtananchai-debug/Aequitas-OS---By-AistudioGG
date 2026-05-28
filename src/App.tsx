@@ -286,7 +286,8 @@ export default function App() {
       baseCurrency: 'USD',
       usdThbRate: 36.45,
       showThbTotals: true,
-      preferThaiNav: true
+      preferThaiNav: true,
+      finnhubKey: ''
     });
   };
 

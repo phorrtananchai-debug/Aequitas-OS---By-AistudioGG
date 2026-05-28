@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   RefreshCw,
   Sliders,
-  AlertCircle
+  AlertCircle,
+  ShieldAlert
 } from 'lucide-react';
 import { Holding, ThaiFundNavState, AlertItem, FinancialSettings } from '../types';
 import { formatCurrency } from '../core/utils';
@@ -196,16 +197,25 @@ export default function MarketsTab({
       
       {/* Title greeting */}
       <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
-            AEQUITAS OPERATING SYSTEMS LEDGER
-          </span>
-          <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
-            Manual Asset Ledger
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
-            Audit and manually update position sizes, historical average costs, or custom mutual fund price benchmarks. Zero third-party tracker hooks required.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between w-full gap-4">
+          <div>
+            <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
+              AEQUITAS OPERATING SYSTEMS LEDGER
+            </span>
+            <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
+              Manual Asset Ledger
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
+              Audit and manually update position sizes, historical average costs, or custom mutual fund price benchmarks. Zero third-party tracker hooks required.
+            </p>
+          </div>
+
+          {!financialSettings.finnhubKey && (
+            <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-500/20 rounded-xl flex items-center gap-2 mb-1 animate-pulse">
+              <ShieldAlert className="text-amber-600 dark:text-amber-400" size={14} />
+              <span className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider">Manual Price Mode Active</span>
+            </div>
+          )}
         </div>
       </section>
 
