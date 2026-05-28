@@ -289,9 +289,24 @@ export default function App() {
     });
   };
 
+  // Utility to detect if current state is demo data
+  const isDemoData = useCallback(() => {
+    if (holdings.length !== INITIAL_HOLDINGS.length) return false;
+    // Check if tickers match INITIAL_HOLDINGS
+    const demoTickers = INITIAL_HOLDINGS.map(h => h.ticker).sort();
+    const currentTickers = holdings.map(h => h.ticker).sort();
+    return demoTickers.every((t, i) => t === currentTickers[i]);
+  }, [holdings]);
+
   // 2. Persistent Storage Sync
   useEffect(() => {
     if (isHydrating) return;
+
+    // Guard: Do not save demo data to the cloud automatically
+    if (user?.uid && workspaceMode === 'cloud' && isDemoData()) {
+      console.warn("[Aequitas OS] Save deferred: Workspace appears to contain demo data. Waiting for real data import.");
+      return;
+    }
 
     saveState({
       holdings,
@@ -306,7 +321,7 @@ export default function App() {
       financialSettings,
       migrationStatus: migrationStatus || undefined
     }, user?.uid);
-  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, snapshots, latestAiImportPlan, financialSettings, migrationStatus, user, isHydrating]);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, snapshots, latestAiImportPlan, financialSettings, migrationStatus, user, isHydrating, isDemoData, workspaceMode]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -525,6 +540,7 @@ export default function App() {
         migrationStatus={migrationStatus}
         user={user}
         workspaceMode={workspaceMode}
+        isDemoData={isDemoData()}
       />
 
       {/* 3. Main content body wrapper */}

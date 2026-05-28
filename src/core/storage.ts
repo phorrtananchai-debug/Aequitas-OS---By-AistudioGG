@@ -65,6 +65,21 @@ export const fetchStateFromFirestore = async (uid: string): Promise<Partial<AppS
   return null;
 };
 
+const sanitizeForFirestore = (obj: any): any => {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) return obj.map(sanitizeForFirestore);
+  if (typeof obj === 'object') {
+    const sanitized: any = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        sanitized[key] = sanitizeForFirestore(obj[key]);
+      }
+    }
+    return sanitized;
+  }
+  return obj;
+};
+
 export const saveStateToFirestore = async (uid: string, state: Partial<AppState>) => {
   try {
     // Safety Check: Don't overwrite with empty state if cloud already has data
@@ -83,8 +98,15 @@ export const saveStateToFirestore = async (uid: string, state: Partial<AppState>
       }
     }
 
+    const sanitizedState = sanitizeForFirestore(state);
+
+    // Ensure migrationStatus is at least null if undefined
+    if (sanitizedState.migrationStatus === undefined) {
+      sanitizedState.migrationStatus = null;
+    }
+
     const docRef = doc(db, 'users', uid, 'aequitas', 'state');
-    await setDoc(docRef, state, { merge: true });
+    await setDoc(docRef, sanitizedState, { merge: true });
     console.log("[Aequitas OS] Cloud Sync SUCCESS");
   } catch (error) {
     console.error("[Aequitas OS] Error saving to Firestore:", error);
@@ -240,12 +262,19 @@ export const migrateData = (uid?: string) => {
     console.log("- Migrated Portfolio Value:", newState.portfolioValue);
     console.log("- Migrated AI Plan:", newState.latestAiImportPlan ? "Yes" : "No");
 
+    const summary = {
+      holdingsCount: newState.holdings?.length || 0,
+      totalValue: newState.portfolioValue || 0,
+      symbols: (newState.holdings || []).slice(0, 3).map((h: any) => h.ticker)
+    };
+
     const status: MigrationStatus = {
       source: 'old-local-storage',
       migratedAt: new Date().toISOString(),
       detectedLegacyKeys,
       unmappedLegacyData,
       coverageReport,
+      summary,
       success: true,
       warnings: []
     };

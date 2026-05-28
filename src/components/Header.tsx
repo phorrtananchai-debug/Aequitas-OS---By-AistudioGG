@@ -16,6 +16,7 @@ interface HeaderProps {
   migrationStatus: MigrationStatus | null;
   user: User | null;
   workspaceMode: 'cloud' | 'local' | 'demo';
+  isDemoData?: boolean;
 }
 
 export default function Header({
@@ -29,7 +30,8 @@ export default function Header({
   onClearAllNotifications,
   migrationStatus,
   user,
-  workspaceMode
+  workspaceMode,
+  isDemoData
 }: HeaderProps) {
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);

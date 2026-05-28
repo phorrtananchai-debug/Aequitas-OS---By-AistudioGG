@@ -256,12 +256,19 @@ export interface MigrationCoverageReport {
   unsupported: string[];
 }
 
+export interface MigrationSummary {
+  holdingsCount: number;
+  totalValue: number;
+  symbols: string[];
+}
+
 export interface MigrationStatus {
   source: 'old-local-storage' | 'new-state' | 'sample-state';
   migratedAt: string | null;
   detectedLegacyKeys?: string[];
   unmappedLegacyData?: Record<string, any>;
   coverageReport?: MigrationCoverageReport;
+  summary?: MigrationSummary;
   success?: boolean;
   warnings: string[];
 }

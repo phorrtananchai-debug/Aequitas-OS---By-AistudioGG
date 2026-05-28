@@ -702,7 +702,21 @@ export default function SettingsTab({
                       {workspaceMode === 'cloud' && migrationStatus?.detectedLegacyKeys && migrationStatus.detectedLegacyKeys.length > 0 && (
                         <button
                           type="button"
-                          onClick={onImportLegacyToCloud}
+                          onClick={() => {
+                            if (migrationStatus?.summary) {
+                              const confirmText = `Are you sure you want to import this legacy portfolio to the cloud?
+- Holdings: ${migrationStatus.summary.holdingsCount}
+- Value: $${migrationStatus.summary.totalValue.toLocaleString()}
+- Symbols: ${migrationStatus.summary.symbols.join(', ')}
+
+This will overwrite your existing cloud workspace.`;
+                              if (window.confirm(confirmText)) {
+                                onImportLegacyToCloud?.();
+                              }
+                            } else {
+                              onImportLegacyToCloud?.();
+                            }
+                          }}
                           className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 transition-all"
                         >
                           <Zap size={12} />
