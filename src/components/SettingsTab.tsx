@@ -74,6 +74,8 @@ export default function SettingsTab({
   const [dcaInterval, setDcaInterval] = useState<string>('weekly');
   const [ledgerVal, setLedgerVal] = useState<string>(portfolioValue.toString());
   const [nodeId, setNodeId] = useState<string>('sol-09');
+  const [finnhubKey, setFinnhubKey] = useState<string>(financialSettings.finnhubKey || '');
+  const [showFinnhubKey, setShowFinnhubKey] = useState<boolean>(false);
 
   // AI Services state (Strictly Optional & Enhanced)
   const [aiProvider, setAiProvider] = useState<string>('gemini');
@@ -112,7 +114,8 @@ export default function SettingsTab({
         baseCurrency,
         usdThbRate: parseFloat(usdThbRate) || 36.45,
         showThbTotals,
-        preferThaiNav
+        preferThaiNav,
+        finnhubKey
       });
 
       setIsSaving(false);
@@ -381,6 +384,36 @@ export default function SettingsTab({
                     </div>
                   </div>
 
+                  {/* Market Data API Keys */}
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-slate-655 block uppercase tracking-wider">Finnhub API Key</label>
+                      <div className="relative">
+                        <KeyRound size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type={showFinnhubKey ? 'text' : 'password'}
+                          value={finnhubKey}
+                          onChange={(e) => setFinnhubKey(e.target.value)}
+                          placeholder="FINNHUB_SANDBOX_KEY"
+                          className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 text-slate-950 dark:text-white rounded-xl pl-10 pr-10 py-3 text-xs focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowFinnhubKey(!showFinnhubKey)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          {showFinnhubKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                      {!finnhubKey && (
+                        <div className="flex items-center gap-1.5 p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-bold">
+                          <ShieldAlert size={12} />
+                          Manual Price Mode Active: Live USD pricing disabled.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Base Currency selection */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-655 block uppercase tracking-wider">Valuation Base Currency</label>
@@ -594,6 +627,19 @@ export default function SettingsTab({
                       </div>
                       <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[9px] font-bold rounded-full border border-emerald-100 uppercase">ACTIVE COHERENCE</span>
                     </div>
+
+                    {/* Firebase API Warning */}
+                    {import.meta.env.VITE_FIREBASE_API_KEY === undefined && (
+                      <div className="flex items-start gap-3 p-4 bg-rose-500/5 rounded-2xl border border-rose-500/10 mb-4">
+                        <ShieldAlert className="text-rose-500 shrink-0" size={18} />
+                        <div className="text-left">
+                          <h4 className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider mb-0.5">Firebase Configuration Missing</h4>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                            VITE_FIREBASE_* environment variables are not detected. Cloud sync and authentication may fail.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Cloud Discovery Option */}
                     {workspaceMode === 'cloud' && (

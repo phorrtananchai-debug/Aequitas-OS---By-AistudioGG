@@ -10,7 +10,8 @@ import {
   Sparkles, 
   Database, 
   FileCode,
-  LayoutDashboard
+  LayoutDashboard,
+  Trash2
 } from 'lucide-react';
 import { Holding, DcaPlan, DividendPlan, ThaiFundNavState, AiImportSchema, AlertItem, TabType, LabsSuggestion } from '../types';
 
@@ -45,6 +46,14 @@ export default function AIWorkflowTab({
   const [pastedJson, setPastedJson] = useState('');
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
+
+  const handleClearDraft = () => {
+    if (window.confirm('Clear active JSON draft?')) {
+      setPastedJson('');
+      setImportFeedback(null);
+      setImportSuccess(null);
+    }
+  };
 
   // Generate the actual live state JSON to copy!
   const activeContext = JSON.stringify({
@@ -271,11 +280,23 @@ export default function AIWorkflowTab({
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white font-sans">Import AI Suggested Parameters</h3>
-                <p className="text-xs text-slate-450 mt-1">
-                  Paste the JSON suggestions box back below to synchronize core indicators and portfolio guidelines instantly.
-                </p>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white font-sans">Import AI Suggested Parameters</h3>
+                  <p className="text-xs text-slate-455 mt-1">
+                    Paste the JSON suggestions box back below to synchronize core indicators and portfolio guidelines instantly.
+                  </p>
+                </div>
+                {pastedJson && (
+                  <button
+                    type="button"
+                    onClick={handleClearDraft}
+                    className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                    title="Clear Draft"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
 
               <textarea

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User } from 'firebase/auth';
-import { migrateData, saveState, fetchStateFromFirestore, mapBackupToState } from './core/storage';
+import { migrateData, saveState, fetchStateFromFirestore, mapBackupToState, saveStateToFirestore } from './core/storage';
 import { getCanonicalBackupState } from './core/recovery';
 import AuthGate from './components/AuthGate';
 import { 
@@ -286,7 +286,8 @@ export default function App() {
       baseCurrency: 'USD',
       usdThbRate: 36.45,
       showThbTotals: true,
-      preferThaiNav: true
+      preferThaiNav: true,
+      finnhubKey: ''
     });
   };
 
@@ -542,6 +543,45 @@ export default function App() {
         user={user}
         workspaceMode={workspaceMode}
         isDemoData={isDemoData()}
+        onSaveToCloud={async () => {
+          if (!user) return;
+          await saveStateToFirestore(user.uid, {
+            holdings,
+            portfolioValue,
+            dcaPlan,
+            dividendPlan,
+            activities,
+            thaiFundNavs,
+            watchlist,
+            snapshots,
+            latestAiImportPlan,
+            financialSettings,
+            migrationStatus: migrationStatus || undefined
+          });
+          pushNotification({
+            type: 'success',
+            typeLabel: 'CLOUD SYNC',
+            title: 'Workspace Saved',
+            description: 'Manual sync to cloud completed successfully.'
+          });
+        }}
+        onLoadFromCloud={async () => {
+          if (!user) return;
+          if (window.confirm("Reload state from cloud? Current local changes may be overwritten.")) {
+            setIsHydrating(true);
+            const cloudState = await fetchStateFromFirestore(user.uid);
+            if (cloudState) {
+              applyState(cloudState);
+              pushNotification({
+                type: 'success',
+                typeLabel: 'CLOUD SYNC',
+                title: 'Workspace Reloaded',
+                description: 'Latest state fetched from cloud successfully.'
+              });
+            }
+            setIsHydrating(false);
+          }
+        }}
       />
 
       {/* 3. Main content body wrapper */}
@@ -674,6 +714,7 @@ export default function App() {
           {activeTab === 'watchlist' && (
             <WatchlistTab
               watchlist={watchlist}
+              onUpdateWatchlist={setWatchlist}
               onTriggerAlert={pushNotification}
             />
           )}

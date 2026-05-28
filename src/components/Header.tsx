@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Bell, Moon, Sun, DollarSign, ArrowRight, Database, CloudCheck, Zap, User as UserIcon, LogOut } from 'lucide-react';
+import { Search, Bell, Moon, Sun, DollarSign, ArrowRight, Database, CloudCheck, Zap, User as UserIcon, LogOut, CloudUpload, RefreshCw } from 'lucide-react';
 import { AlertItem, MigrationStatus } from '../types';
 import { User, signOut } from 'firebase/auth';
 import { auth } from '../core/firebase';
@@ -17,6 +17,8 @@ interface HeaderProps {
   user: User | null;
   workspaceMode: 'cloud' | 'local' | 'demo';
   isDemoData?: boolean;
+  onSaveToCloud?: () => void;
+  onLoadFromCloud?: () => void;
 }
 
 export default function Header({
@@ -31,7 +33,9 @@ export default function Header({
   migrationStatus,
   user,
   workspaceMode,
-  isDemoData
+  isDemoData,
+  onSaveToCloud,
+  onLoadFromCloud
 }: HeaderProps) {
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -87,13 +91,14 @@ export default function Header({
       <div className="flex items-center gap-4">
         
         {/* Workspace Mode Indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
-          {workspaceMode === 'cloud' ? (
-            <>
-              <CloudCheck className="text-blue-500" size={14} />
-              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">Cloud Workspace</span>
-            </>
-          ) : workspaceMode === 'demo' ? (
+        <div className="flex items-center gap-2 px-1 py-1 rounded-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
+          <div className="flex items-center gap-2 px-3 py-1">
+            {workspaceMode === 'cloud' ? (
+              <>
+                <CloudCheck className="text-blue-500" size={14} />
+                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">Cloud Workspace</span>
+              </>
+            ) : workspaceMode === 'demo' ? (
             <>
               <Zap className="text-amber-500" size={14} />
               <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">Demo Mode</span>
@@ -103,6 +108,26 @@ export default function Header({
               <Database className="text-slate-400" size={14} />
               <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">Local Cache</span>
             </>
+          )}
+          </div>
+
+          {workspaceMode === 'cloud' && (
+            <div className="flex items-center gap-1 pr-1 border-l border-slate-200 dark:border-slate-700 ml-1 pl-2">
+              <button
+                onClick={onSaveToCloud}
+                title="Force Save to Cloud"
+                className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 hover:text-blue-600"
+              >
+                <CloudUpload size={14} />
+              </button>
+              <button
+                onClick={onLoadFromCloud}
+                title="Reload from Cloud"
+                className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 hover:text-blue-600"
+              >
+                <RefreshCw size={14} />
+              </button>
+            </div>
           )}
         </div>
 

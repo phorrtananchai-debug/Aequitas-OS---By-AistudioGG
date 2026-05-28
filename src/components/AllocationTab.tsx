@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sliders, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Sliders, Zap, CheckCircle2, RefreshCw, ArrowUpCircle, ArrowDownCircle, MinusCircle, AlertTriangle } from 'lucide-react';
 import { Holding, AiImportSchema, FinancialSettings } from '../types';
 import { calculatePortfolioDrift, calculateLayerStats, formatCurrency } from '../core/utils';
 
@@ -79,6 +79,91 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Drift Safety Bound</span>
           <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">±{driftTolerance}%</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Adjustable parameters</p>
+        </div>
+      </div>
+
+      {/* REBALANCE ACTION PLAN (SCOPE B) */}
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800/45 mb-6">
+          <div>
+            <span className="text-[10px] uppercase font-black tracking-wider text-amber-600">Strategic Alignment Protocol</span>
+            <h3 className="text-lg font-bold tracking-tight mt-1 text-slate-900 dark:text-white">Manual Rebalance Action Plan</h3>
+          </div>
+          <div className="px-3 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-bold flex items-center gap-1.5">
+            <Zap size={12} />
+            Computed from Live Weights
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="text-[10px] tracking-widest font-black text-slate-400 uppercase border-b border-slate-50">
+                <th className="px-4 py-3">Sector Layer</th>
+                <th className="px-4 py-3 text-center">Current %</th>
+                <th className="px-4 py-3 text-center">Target %</th>
+                <th className="px-4 py-3 text-center">Diff %</th>
+                <th className="px-4 py-3 text-center">Suggested Action</th>
+                <th className="px-4 py-3 text-right">Estimate Delta</th>
+                <th className="px-4 py-3 text-center">Priority</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800/20 text-xs font-sans">
+              {allocations.map((alloc) => {
+                const diff = alloc.current - alloc.target;
+                const absDiff = Math.abs(diff);
+                const action = diff > 1.5 ? 'Trim' : diff < -1.5 ? 'Add' : 'Hold';
+                const totalValue = layerStats.totalValue;
+                const deltaAmount = (Math.abs(diff) / 100) * totalValue;
+                const priority = absDiff > 5 ? 'High' : absDiff > 2 ? 'Medium' : 'Low';
+
+                return (
+                  <tr key={alloc.ticker} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${alloc.color}`} />
+                        <span className="font-bold text-slate-800 dark:text-slate-200">{alloc.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-center font-mono">{alloc.current}%</td>
+                    <td className="px-4 py-4 text-center font-mono text-slate-400">{alloc.target}%</td>
+                    <td className="px-4 py-4 text-center font-mono">
+                      <span className={diff > 0 ? 'text-rose-500' : diff < 0 ? 'text-emerald-600' : 'text-slate-400'}>
+                        {diff > 0 ? '+' : ''}{diff.toFixed(1)}%
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold text-[10px] uppercase ${
+                        action === 'Trim' ? 'bg-rose-50 text-rose-600' :
+                        action === 'Add' ? 'bg-emerald-50 text-emerald-600' :
+                        'bg-slate-100 text-slate-500'
+                      }`}>
+                        {action === 'Trim' ? <ArrowDownCircle size={10} /> : action === 'Add' ? <ArrowUpCircle size={10} /> : <MinusCircle size={10} />}
+                        {action}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-right font-mono font-bold">
+                      {action !== 'Hold' ? formatCurrency(deltaAmount, financialSettings) : '—'}
+                    </td>
+                    <td className="px-4 py-4 text-center">
+                      <span className={`text-[10px] font-bold uppercase ${
+                        priority === 'High' ? 'text-rose-600' : priority === 'Medium' ? 'text-amber-600' : 'text-slate-400'
+                      }`}>
+                        {priority}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/20 rounded-2xl flex items-start gap-3 border border-slate-100 dark:border-slate-800">
+          <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            <strong>Rebalance Logic:</strong> Suggested deltas represent the capital shift required to restore target parity. Under Aequitas philosophy, rebalancing should be achieved primarily through subsequent <strong>Monthly DCA directions</strong> rather than taxable exit events where possible.
+          </p>
         </div>
       </div>
 
