@@ -1,89 +1,52 @@
 import { Holding } from '../types';
 
+export const ASSET_LAYERS = [
+  { name: 'Core ETF Layer', types: ['US ETF', 'Thai Mutual Fund'], target: 35 },
+  { name: 'Growth Layer', types: ['US Stock'], target: 35 },
+  { name: 'Dividend / Behavior Layer', types: ['Dividend ETF'], target: 15 },
+  { name: 'Thai Tax Wrapper Layer', types: ['Thai RMF'], target: 12 },
+  { name: 'Sandbox Layer', types: ['Sandbox Asset'], target: 3 },
+];
+
+export const getLayerValue = (layerName: string, holdings: Holding[]): number => {
+  const layer = ASSET_LAYERS.find(l => l.name === layerName);
+  if (!layer) return 0;
+  return (holdings || [])
+    .filter(h => layer.types.includes(h.type))
+    .reduce((acc, h) => acc + (h.value || 0), 0);
+};
+
 export const calculateLayerStats = (holdings: Holding[]) => {
-  const totalValue = holdings.reduce((acc, h) => acc + h.value, 0);
-
-  const getLayerValue = (layerName: string): number => {
-    return holdings
-      .filter(h => {
-        if (layerName === 'Core ETF Layer') return h.type === 'US ETF' || h.type === 'Thai Mutual Fund';
-        if (layerName === 'Growth Layer') return h.type === 'US Stock';
-        if (layerName === 'Dividend / Behavior Layer') return h.type === 'Dividend ETF';
-        if (layerName === 'Thai Tax Wrapper Layer') return h.type === 'Thai RMF';
-        if (layerName === 'Sandbox Layer') return h.type === 'Sandbox Asset';
-        return false;
-      })
-      .reduce((acc, h) => acc + h.value, 0);
-  };
-
+  const totalValue = (holdings || []).reduce((acc, h) => acc + (h.value || 0), 0);
   const safeTotal = totalValue || 1;
+
+  const getSafePct = (val: number) => {
+    const res = (val / safeTotal) * 100;
+    return Number.isFinite(res) ? parseFloat(res.toFixed(1)) : 0;
+  };
 
   return {
     totalValue,
-    core: { value: getLayerValue('Core ETF Layer'), pct: parseFloat(((getLayerValue('Core ETF Layer') / safeTotal) * 100).toFixed(1)) },
-    growth: { value: getLayerValue('Growth Layer'), pct: parseFloat(((getLayerValue('Growth Layer') / safeTotal) * 100).toFixed(1)) },
-    dividend: { value: getLayerValue('Dividend / Behavior Layer'), pct: parseFloat(((getLayerValue('Dividend / Behavior Layer') / safeTotal) * 100).toFixed(1)) },
-    tax: { value: getLayerValue('Thai Tax Wrapper Layer'), pct: parseFloat(((getLayerValue('Thai Tax Wrapper Layer') / safeTotal) * 100).toFixed(1)) },
-    sandbox: { value: getLayerValue('Sandbox Layer'), pct: parseFloat(((getLayerValue('Sandbox Layer') / safeTotal) * 100).toFixed(1)) },
-  };
-};
-
-export const calculateDividendStats = (holdings: Holding[]) => {
-  const annualEst = holdings.reduce((acc, h) => acc + (h.value * (h.dividendYield || 0) / 100), 0);
-  const monthlyEst = annualEst / 12;
-  const totalValue = holdings.reduce((acc, h) => acc + h.value, 0);
-  const weightedApy = totalValue > 0 ? (annualEst / totalValue) * 100 : 0;
-
-  return {
-    annualEst,
-    monthlyEst,
-    weightedApy
+    core: { value: getLayerValue('Core ETF Layer', holdings), pct: getSafePct(getLayerValue('Core ETF Layer', holdings)) },
+    growth: { value: getLayerValue('Growth Layer', holdings), pct: getSafePct(getLayerValue('Growth Layer', holdings)) },
+    dividend: { value: getLayerValue('Dividend / Behavior Layer', holdings), pct: getSafePct(getLayerValue('Dividend / Behavior Layer', holdings)) },
+    tax: { value: getLayerValue('Thai Tax Wrapper Layer', holdings), pct: getSafePct(getLayerValue('Thai Tax Wrapper Layer', holdings)) },
+    sandbox: { value: getLayerValue('Sandbox Layer', holdings), pct: getSafePct(getLayerValue('Sandbox Layer', holdings)) },
   };
 };
 
 export const calculatePortfolioDrift = (holdings: Holding[]) => {
-  const totalValue = holdings.reduce((acc, h) => acc + h.value, 0);
-  if (totalValue === 0) return 0;
-
-  // We use the same layer definitions as calculateLayerStats
-  const layers = [
-    { name: 'Core ETF Layer', target: 35 },
-    { name: 'Growth Layer', target: 35 },
-    { name: 'Dividend / Behavior Layer', target: 15 },
-    { name: 'Thai Tax Wrapper Layer', target: 12 },
-    { name: 'Sandbox Layer', target: 3 },
-  ];
+  const totalValue = (holdings || []).reduce((acc, h) => acc + (h.value || 0), 0);
+  if (!totalValue) return 0;
 
   let totalWeightedDrift = 0;
 
-  layers.forEach(layer => {
-    const layerValue = holdings
-      .filter(h => {
-        if (layer.name === 'Core ETF Layer') return h.type === 'US ETF' || h.type === 'Thai Mutual Fund';
-        if (layer.name === 'Growth Layer') return h.type === 'US Stock';
-        if (layer.name === 'Dividend / Behavior Layer') return h.type === 'Dividend ETF';
-        if (layer.name === 'Thai Tax Wrapper Layer') return h.type === 'Thai RMF';
-        if (layer.name === 'Sandbox Layer') return h.type === 'Sandbox Asset';
-        return false;
-      })
-      .reduce((acc, h) => acc + h.value, 0);
-
+  ASSET_LAYERS.forEach(layer => {
+    const layerValue = getLayerValue(layer.name, holdings);
     const currentPct = (layerValue / totalValue) * 100;
     const drift = Math.abs(currentPct - layer.target);
-    // Weighted drift contribution: (layer target / 100) * drift
-    // Or just a simple average of absolute drifts for the "index"
     totalWeightedDrift += drift * (layer.target / 100);
   });
 
-  return parseFloat(totalWeightedDrift.toFixed(1));
-};
-
-export const formatCurrency = (value: number, settings: { baseCurrency: string, usdThbRate: number, showThbTotals: boolean }) => {
-  if (settings.showThbTotals) {
-    const thbValue = value * settings.usdThbRate;
-    return `฿${thbValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  }
-
-  const symbol = settings.baseCurrency === 'USD' ? '$' : settings.baseCurrency + ' ';
-  return `${symbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return Number.isFinite(totalWeightedDrift) ? parseFloat(totalWeightedDrift.toFixed(1)) : 0;
 };

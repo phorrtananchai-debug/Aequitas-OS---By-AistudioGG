@@ -10,8 +10,6 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
-import { FinancialSettings } from '../types';
-import { formatCurrency } from '../core/utils';
 
 interface SnapshotItem {
   id: string;
@@ -27,20 +25,32 @@ interface SnapshotsTabProps {
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
   holdings?: any[];
-  snapshots: any[];
-  onUpdateSnapshots: (snapshots: any[]) => void;
-  financialSettings: FinancialSettings;
 }
 
 export default function SnapshotsTab({
   portfolioValue,
   onUpdatePortfolio,
   onTriggerAlert,
-  holdings,
-  snapshots,
-  onUpdateSnapshots,
-  financialSettings
+  holdings
 }: SnapshotsTabProps) {
+  const [snapshots, setSnapshots] = useState<SnapshotItem[]>([
+    {
+      id: 'snap-1',
+      name: 'Main Ledger Archive - April 2026 Sync',
+      timestamp: '2026-04-12T14:32:00Z',
+      value: 462000,
+      node: 'Primary Ledger',
+      drift: '3.1%'
+    },
+    {
+      id: 'snap-2',
+      name: 'Q1 Rebalance Baseline',
+      timestamp: '2026-01-05T09:15:00Z',
+      value: 415300,
+      node: 'Primary Ledger',
+      drift: '2.8%'
+    }
+  ]);
 
   const [newSnapshotName, setNewSnapshotName] = useState('');
 
@@ -57,7 +67,7 @@ export default function SnapshotsTab({
       drift: '3.2%'
     };
 
-    onUpdateSnapshots([newSnap, ...snapshots]);
+    setSnapshots([newSnap, ...snapshots]);
     setNewSnapshotName('');
     onTriggerAlert({
       type: 'success',
@@ -68,27 +78,23 @@ export default function SnapshotsTab({
   };
 
   const handleApplySnapshot = (snap: SnapshotItem) => {
-    if (window.confirm(`Are you sure you want to restore "${snap.name}"? Current unsaved changes will be lost.`)) {
-      onUpdatePortfolio(snap.value);
-      onTriggerAlert({
-        type: 'success',
-        typeLabel: 'STATE RESTORED',
-        title: 'Local Snapshot Instated',
-        description: `Active dashboard parameters calibrated back to state "${snap.name}".`
-      });
-    }
+    onUpdatePortfolio(snap.value);
+    onTriggerAlert({
+      type: 'success',
+      typeLabel: 'STATE RESTORED',
+      title: 'Local Snapshot Instated',
+      description: `Active dashboard parameters calibrated back to state "${snap.name}".`
+    });
   };
 
   const handleDeleteSnapshot = (id: string, name: string) => {
-    if (window.confirm(`Permanently delete snapshot "${name}"?`)) {
-      onUpdateSnapshots(snapshots.filter(s => s.id !== id));
-      onTriggerAlert({
-        type: 'advisory',
-        typeLabel: 'SNAPSHOT PRUNED',
-        title: 'Record Removed',
-        description: `State archive "${name}" has been permanently purged.`
-      });
-    }
+    setSnapshots(snapshots.filter(s => s.id !== id));
+    onTriggerAlert({
+      type: 'advisory',
+      typeLabel: 'SNAPSHOT PRUNED',
+      title: 'Record Removed',
+      description: `State archive "${name}" has been permanently purged.`
+    });
   };
 
   const handleDownloadBackup = () => {
@@ -133,7 +139,7 @@ export default function SnapshotsTab({
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Active Sandbox Size</span>
-          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{formatCurrency(portfolioValue, financialSettings)}</span>
+          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">${portfolioValue.toLocaleString()}</span>
         </div>
 
         {/* Local Backup Action block */}
@@ -186,7 +192,7 @@ export default function SnapshotsTab({
                 </div>
                 <div className="flex justify-between">
                   <span>Balance Record:</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-350">{formatCurrency(portfolioValue, financialSettings)}</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-350">${portfolioValue.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -215,7 +221,7 @@ export default function SnapshotsTab({
                 <p className="text-xs font-semibold">No saved snapshot states recorded yet.</p>
               </div>
             ) : (
-              (snapshots || []).map((snap) => (
+              snapshots.map((snap) => (
                 <div 
                   key={snap.id} 
                   className="p-5 bg-white dark:bg-slate-900/40 border border-slate-150 dark:border-slate-800 rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 hover:border-blue-300 dark:hover:border-slate-600 transition-all font-sans"
@@ -237,7 +243,7 @@ export default function SnapshotsTab({
                   <div className="flex items-center gap-4 justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
                     <div className="text-right shrink-0">
                       <span className="text-[9px] uppercase font-bold text-slate-400 block">ARCHIVED VALUE</span>
-                      <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(snap.value, financialSettings)}</span>
+                      <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">${snap.value.toLocaleString()}</span>
                     </div>
 
                     <div className="flex gap-2">

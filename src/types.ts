@@ -210,29 +210,6 @@ export interface AlertItem {
   description: string;
 }
 
-export interface AlertRule {
-  id: string;
-  ticker: string;
-  symbol: string;
-  triggerType: string;
-  condition: 'above' | 'below';
-  targetPrice: number;
-  message: string;
-  enabled: boolean;
-  status: 'active' | 'triggered';
-  lastTriggeredAt: string | null;
-}
-
-export interface DividendHistoryItem {
-  id: string;
-  date: string;
-  ticker: string;
-  amountUSD: number;
-  taxUSD: number;
-  netUSD: number;
-  note?: string;
-}
-
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'ai';
@@ -270,36 +247,4 @@ export interface StrategyArchetype {
   status: string;
   risk: string;
   active?: boolean;
-}
-
-export interface MigrationCoverageReport {
-  detected: string[];
-  migrated: string[];
-  ignored: string[];
-  unsupported: string[];
-}
-
-export interface MigrationSummary {
-  holdingsCount: number;
-  totalValue: number;
-  symbols: string[];
-}
-
-export interface MigrationStatus {
-  source: 'old-local-storage' | 'new-state' | 'sample-state';
-  migratedAt: string | null;
-  detectedLegacyKeys?: string[];
-  unmappedLegacyData?: Record<string, any>;
-  coverageReport?: MigrationCoverageReport;
-  summary?: MigrationSummary;
-  success?: boolean;
-  warnings: string[];
-}
-
-export interface FinancialSettings {
-  baseCurrency: string;
-  usdThbRate: number;
-  showThbTotals: boolean;
-  preferThaiNav: boolean;
-  finnhubKey?: string;
 }

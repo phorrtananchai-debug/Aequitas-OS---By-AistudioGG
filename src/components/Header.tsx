@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Bell, Moon, Sun, DollarSign, ArrowRight, Database, CloudCheck, Zap, User as UserIcon, LogOut, CloudUpload, RefreshCw } from 'lucide-react';
-import { AlertItem, MigrationStatus } from '../types';
-import { User, signOut } from 'firebase/auth';
-import { auth } from '../core/firebase';
+import { Search, Bell, Moon, Sun, DollarSign, ArrowRight } from 'lucide-react';
+import { AlertItem } from '../types';
 
 interface HeaderProps {
   searchQuery: string;
@@ -13,12 +11,6 @@ interface HeaderProps {
   toggleDarkMode: () => void;
   onClearNotification: (id: string) => void;
   onClearAllNotifications: () => void;
-  migrationStatus: MigrationStatus | null;
-  user: User | null;
-  workspaceMode: 'cloud' | 'local' | 'demo';
-  isDemoData?: boolean;
-  onSaveToCloud?: () => void;
-  onLoadFromCloud?: () => void;
 }
 
 export default function Header({
@@ -29,13 +21,7 @@ export default function Header({
   darkMode,
   toggleDarkMode,
   onClearNotification,
-  onClearAllNotifications,
-  migrationStatus,
-  user,
-  workspaceMode,
-  isDemoData,
-  onSaveToCloud,
-  onLoadFromCloud
+  onClearAllNotifications
 }: HeaderProps) {
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -90,55 +76,6 @@ export default function Header({
       {/* Quick Action bar icons, Dark mode, execute trade, avatar */}
       <div className="flex items-center gap-4">
         
-        {/* Workspace Mode Indicator */}
-        <div className="flex items-center gap-2 px-1 py-1 rounded-full bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50">
-          <div className="flex items-center gap-2 px-3 py-1">
-            {workspaceMode === 'cloud' ? (
-              <>
-                <CloudCheck className="text-blue-500" size={14} />
-                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">Cloud Workspace</span>
-              </>
-            ) : workspaceMode === 'demo' ? (
-            <>
-              <Zap className="text-amber-500" size={14} />
-              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">Demo Mode</span>
-            </>
-          ) : (
-            <>
-              <Database className="text-slate-400" size={14} />
-              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">Local Cache</span>
-            </>
-          )}
-          </div>
-
-          {workspaceMode === 'cloud' && (
-            <div className="flex items-center gap-1 pr-1 border-l border-slate-200 dark:border-slate-700 ml-1 pl-2">
-              <button
-                onClick={onSaveToCloud}
-                title="Force Save to Cloud"
-                className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 hover:text-blue-600"
-              >
-                <CloudUpload size={14} />
-              </button>
-              <button
-                onClick={onLoadFromCloud}
-                title="Reload from Cloud"
-                className="p-1.5 hover:bg-white dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 hover:text-blue-600"
-              >
-                <RefreshCw size={14} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Migration/Continuity Indicator */}
-        {migrationStatus?.source === 'old-local-storage' && (
-          <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-full">
-            <Database size={12} className="text-emerald-600 dark:text-emerald-400" />
-            <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Legacy Continuity Active</span>
-          </div>
-        )}
-
         {/* Dark Mode toggle */}
         <button
           id="btn-header-dark-mode"
@@ -240,17 +177,13 @@ export default function Header({
               setProfileOpen(!profileOpen);
               setBellOpen(false);
             }}
-            className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-300 dark:border-slate-700/80 shadow-sm hover:border-[#1E1B16] dark:hover:border-slate-400 transition-all flex items-center justify-center bg-slate-200 dark:bg-slate-800"
+            className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-300 dark:border-slate-700/80 shadow-sm hover:border-[#1E1B16] dark:hover:border-slate-400 transition-all"
           >
-            {user?.photoURL ? (
-              <img
-                alt="Investor Profile"
-                src={user.photoURL}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <UserIcon size={20} className="text-slate-400" />
-            )}
+            <img
+              alt="Investor Profile"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAskkX7m3-gia3wqFjk36xX-jeMkb2wSwfM7zJZrohZ0wnLpG1hO_EXzXzD_eXlaAbRyKynmyIWePoQBeg9Oz8XQtxJRaSfL2CXTuql407Sjjp8uhvfuJWcjM0joBmjR7e7XtMZKGWrf8f5Rlk19WPEjpzpr-_X7T7utPHA6wsVnzfkSwfX79tfvgAHBuycVP8og3CtVlnjpC93CRDKmkRzisGV7SSHCslu-DWwFzrrqbEB-OtU7q0KofqgmPvubCw6NKNJkaNQ2BQ"
+              className="w-full h-full object-cover"
+            />
           </button>
 
           {profileOpen && (
@@ -259,47 +192,27 @@ export default function Header({
               className="absolute right-0 mt-3 w-64 glass-panel border border-slate-200/80 dark:border-slate-800/85 rounded-2xl shadow-2xl p-4 text-slate-800 dark:text-slate-100 z-50 animate-fade-in"
             >
               <div className="flex gap-3 items-center pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
-                <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
-                  {user?.photoURL ? (
-                    <img
-                      alt="Investor Avatar"
-                      src={user.photoURL}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <UserIcon size={24} className="text-slate-400" />
-                  )}
+                <div className="w-12 h-12 rounded-full overflow-hidden border border-[#1E1B16] dark:border-slate-600">
+                  <img
+                    alt="Investor Avatar"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAskkX7m3-gia3wqFjk36xX-jeMkb2wSwfM7zJZrohZ0wnLpG1hO_EXzXzD_eXlaAbRyKynmyIWePoQBeg9Oz8XQtxJRaSfL2CXTuql407Sjjp8uhvfuJWcjM0joBmjR7e7XtMZKGWrf8f5Rlk19WPEjpzpr-_X7T7utPHA6wsVnzfkSwfX79tfvgAHBuycVP8og3CtVlnjpC93CRDKmkRzisGV7SSHCslu-DWwFzrrqbEB-OtU7q0KofqgmPvubCw6NKNJkaNQ2BQ"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                <div className="overflow-hidden">
-                  <h4 className="font-bold text-sm truncate">{user?.displayName || (workspaceMode === 'demo' ? 'Demo Account' : 'Guest User')}</h4>
-                  <p className="text-[10px] text-slate-400 truncate">{user?.email || 'Secured Ledger'}</p>
+                <div>
+                  <h4 className="font-bold text-sm">Phorr Tananchai</h4>
+                  <p className="text-[10px] text-slate-400">Institutional Advisor</p>
                 </div>
               </div>
               <div className="py-2.5 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                 <div className="flex justify-between">
-                  <span>Workspace ID:</span>
-                  <span className="font-mono text-[9px] font-bold opacity-60">
-                    {user?.uid ? user.uid.substring(0, 12) + '...' : (workspaceMode === 'demo' ? 'DEMO-8080' : 'LOCAL-ONLY')}
-                  </span>
+                  <span>Authorized Clearings:</span>
+                  <span className="font-mono text-[11px] font-bold">VIP-1A Class</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Session Access:</span>
-                  <span className="font-mono text-[11px] font-bold uppercase text-emerald-500">Authorized</span>
+                  <span>System Nodes IP:</span>
+                  <span className="font-mono text-[11px]">80.65.48.94</span>
                 </div>
-              </div>
-
-              <div className="mt-2 pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
-                <button
-                  onClick={() => {
-                    if (window.confirm("Disconnect from Aequitas Workspace?")) {
-                      signOut(auth);
-                    }
-                  }}
-                  className="w-full py-2 px-3 flex items-center gap-2 text-[11px] font-bold text-red-500 hover:bg-red-500/5 rounded-lg transition-colors"
-                >
-                  <LogOut size={14} />
-                  Disconnect Workspace
-                </button>
               </div>
             </div>
           )}

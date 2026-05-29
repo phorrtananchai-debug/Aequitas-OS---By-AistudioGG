@@ -1,114 +1,21 @@
-import React, { useState } from 'react';
-import { Calendar, Layers, Clock, Plus, ArrowUpRight, CheckCircle2, ChevronRight, Play, Edit3, Trash2, X, Check } from 'lucide-react';
-import { DcaPlan, Holding, AlertItem, FinancialSettings } from '../types';
-import { formatCurrency } from '../core/utils';
+import { useState } from 'react';
+import { Calendar, Layers, Clock, Plus, ArrowUpRight, CheckCircle2, ChevronRight, Play } from 'lucide-react';
 
-interface DcaPlanTabProps {
-  dcaPlan: DcaPlan;
-  onUpdateDcaPlan: (plan: DcaPlan) => void;
-  holdings: Holding[];
-  onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
-  financialSettings: FinancialSettings;
-}
+export default function DcaPlanTab() {
+  const [activeFrequency, setActiveFrequency] = useState<'Daily' | 'Weekly' | 'Monthly'>('Weekly');
+  const [totalContribution, setTotalContribution] = useState<number>(300);
 
-export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTriggerAlert, financialSettings }: DcaPlanTabProps) {
-  const [activeFrequency, setActiveFrequency] = useState<string>('Monthly');
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Form State
-  const [editTicker, setEditTicker] = useState('');
-  const [editAmount, setEditAmount] = useState('');
-
-  const handleContributionChange = (val: number) => {
-    const ratio = val / (dcaPlan.monthlyContributionPlan || 1);
-    const updatedItems = dcaPlan.items.map(item => ({
-      ...item,
-      targetAmount: Math.round(item.targetAmount * ratio)
-    }));
-
-    onUpdateDcaPlan({
-      ...dcaPlan,
-      monthlyContributionPlan: val,
-      items: updatedItems
-    });
-  };
-
-  const handleTriggerDca = () => {
-    setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      onTriggerAlert({
-        type: 'success',
-        typeLabel: 'DCA EXECUTED',
-        title: 'Monthly Contribution Distributed',
-        description: `Successfully simulated the distribution of ${formatCurrency(dcaPlan.monthlyContributionPlan, financialSettings)} across target assets.`
-      });
-    }, 1500);
-  };
-
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editTicker || !editAmount) return;
-    const newItem = {
-      id: `dca-${Date.now()}`,
-      ticker: editTicker.toUpperCase(),
-      name: holdings.find(h => h.ticker === editTicker.toUpperCase())?.name || editTicker.toUpperCase(),
-      targetAmount: parseFloat(editAmount) || 0,
-      priorityOrder: dcaPlan.items.length + 1,
-      interval: 'Monthly',
-      status: 'Pending' as const
-    };
-    const nextItems = [...dcaPlan.items, newItem];
-    const nextTotal = nextItems.reduce((sum, i) => sum + i.targetAmount, 0);
-    onUpdateDcaPlan({
-      ...dcaPlan,
-      items: nextItems,
-      monthlyContributionPlan: nextTotal
-    });
-    setIsAdding(false);
-    resetForm();
-  };
-
-  const handleEdit = (item: any) => {
-    setEditingId(item.id);
-    setEditTicker(item.ticker);
-    setEditAmount(item.targetAmount.toString());
-  };
-
-  const handleSaveEdit = (id: string) => {
-    const nextItems = dcaPlan.items.map(item => item.id === id ? {
-      ...item,
-      ticker: editTicker.toUpperCase(),
-      targetAmount: parseFloat(editAmount) || 0
-    } : item);
-    const nextTotal = nextItems.reduce((sum, i) => sum + i.targetAmount, 0);
-    onUpdateDcaPlan({ ...dcaPlan, items: nextItems, monthlyContributionPlan: nextTotal });
-    setEditingId(null);
-    resetForm();
-  };
-
-  const handleDelete = (id: string, ticker: string) => {
-    if (window.confirm(`Remove ${ticker} from DCA plan?`)) {
-      const nextItems = dcaPlan.items.filter(i => i.id !== id);
-      const nextTotal = nextItems.reduce((sum, i) => sum + i.targetAmount, 0);
-      onUpdateDcaPlan({
-        ...dcaPlan,
-        items: nextItems,
-        monthlyContributionPlan: nextTotal
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setEditTicker('');
-    setEditAmount('');
-  };
+  const dcaAssets = [
+    { name: 'Solana Stable Yields', ticker: 'SOL', percentage: 48, assetClass: 'Layer-1 Infrastructure', state: 'Active' },
+    { name: 'Bitcoin Digital Gold', ticker: 'BTC', percentage: 32, assetClass: 'Store of Value', state: 'Active' },
+    { name: 'Ethereum Consensus Core', ticker: 'ETH', percentage: 20, assetClass: 'Smart Contracts Platform', state: 'Active' },
+  ];
 
   const historicalContributions = [
-    { date: 'May 20, 2026', total: 5500.00, breakdown: 'VOO: $1500 | K-US500XRMF: $1200 | Others: $2800', status: 'COMPLETED' },
-    { date: 'April 20, 2026', total: 5500.00, breakdown: 'VOO: $1500 | K-US500XRMF: $1200 | Others: $2800', status: 'COMPLETED' },
+    { date: 'May 20, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
+    { date: 'May 13, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
+    { date: 'May 06, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
+    { date: 'Apr 29, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
   ];
 
   return (
@@ -126,29 +33,7 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
             Schedule automatic contributions, divide deposit splits across active assets, and view scheduled execution queues.
           </p>
         </div>
-        <button
-          onClick={() => { setIsAdding(true); resetForm(); }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5 mb-1"
-        >
-          <Plus size={14} />
-          Add Allocation
-        </button>
       </section>
-
-      {isAdding && (
-        <div className="p-6 bg-blue-50/30 dark:bg-slate-900/40 border border-blue-200/50 dark:border-slate-800 rounded-3xl animate-slide-in">
-          <form onSubmit={handleAdd} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input value={editTicker} onChange={e => setEditTicker(e.target.value)} placeholder="Ticker (e.g. VOO)" className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 text-xs" />
-              <input value={editAmount} onChange={e => setEditAmount(e.target.value)} placeholder="Amount $" type="number" className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 text-xs" />
-            </div>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setIsAdding(false)} className="px-3 py-1.5 text-xs font-bold text-slate-500">Cancel</button>
-              <button type="submit" className="px-4 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg">Save Allocation</button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Main Grid: Settings & Configuration */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -183,15 +68,15 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
               <div className="space-y-1.5 text-xs font-bold text-slate-655 shrink-0">
                 <div className="flex justify-between items-baseline">
                   <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Recurring Amount (USD)</label>
-                  <span className="font-mono text-blue-600 font-bold">{formatCurrency(dcaPlan.monthlyContributionPlan, financialSettings)} / period</span>
+                  <span className="font-mono text-blue-600 font-bold">${totalContribution} / period</span>
                 </div>
                 <input 
                   type="range"
-                  min="500"
-                  max="10000"
-                  step="100"
-                  value={dcaPlan.monthlyContributionPlan}
-                  onChange={(e) => handleContributionChange(parseInt(e.target.value))}
+                  min="50"
+                  max="1000"
+                  step="25"
+                  value={totalContribution}
+                  onChange={(e) => setTotalContribution(parseInt(e.target.value))}
                   className="accent-blue-600 h-1.5 w-full bg-slate-200 rounded-lg cursor-pointer"
                 />
               </div>
@@ -200,46 +85,22 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
               <div className="space-y-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Core Splitting Ledger</span>
                 <div className="space-y-2.5">
-                  {dcaPlan.items.map((item) => {
-                    const holding = holdings.find(h => h.ticker === item.ticker);
-                    const isEditing = editingId === item.id;
+                  {dcaAssets.map((asset) => {
+                    const allocationValue = (totalContribution * asset.percentage) / 100;
                     return (
-                      <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-905/30 border border-slate-100 dark:border-slate-805/5 rounded-xl text-xs font-sans group">
-                        <div className="flex items-center gap-3 flex-1">
+                      <div key={asset.ticker} className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-905/30 border border-slate-100 dark:border-slate-805/5 rounded-xl text-xs font-sans">
+                        <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-slate-800 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold tracking-wider">
-                            {isEditing ? (
-                              <input value={editTicker} onChange={e => setEditTicker(e.target.value)} className="w-full bg-transparent text-center focus:outline-none uppercase" />
-                            ) : item.ticker}
+                            {asset.ticker}
                           </div>
                           <div>
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{item.name || holding?.name || item.ticker}</span>
-                            <span className="text-[10px] text-slate-400 block">{holding?.type || 'Asset'}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{asset.name}</span>
+                            <span className="text-[10px] text-slate-400 block">{asset.assetClass}</span>
                           </div>
                         </div>
-                        <div className="text-right flex items-center gap-4">
-                          <div>
-                            {isEditing ? (
-                              <div className="flex items-center gap-1 border-b border-blue-500">
-                                <span className="text-slate-400">$</span>
-                                <input value={editAmount} onChange={e => setEditAmount(e.target.value)} className="w-16 bg-transparent focus:outline-none text-right font-mono font-bold" />
-                              </div>
-                            ) : (
-                              <span className="font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(item.targetAmount, financialSettings)}</span>
-                            )}
-                            <span className="text-[10px] text-slate-400 block font-mono">({((item.targetAmount / dcaPlan.monthlyContributionPlan) * 100).toFixed(1)}%)</span>
-                          </div>
-
-                          {isEditing ? (
-                            <div className="flex gap-1">
-                              <button onClick={() => setEditingId(null)} className="p-1 text-slate-400"><X size={14}/></button>
-                              <button onClick={() => handleSaveEdit(item.id)} className="p-1 text-emerald-600"><Check size={14}/></button>
-                            </div>
-                          ) : (
-                            <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button onClick={() => handleEdit(item)} className="p-1 text-slate-400 hover:text-blue-600"><Edit3 size={14}/></button>
-                              <button onClick={() => handleDelete(item.id, item.ticker)} className="p-1 text-slate-400 hover:text-rose-600"><Trash2 size={14}/></button>
-                            </div>
-                          )}
+                        <div className="text-right">
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">${allocationValue.toFixed(2)}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">({asset.percentage}%)</span>
                         </div>
                       </div>
                     );
@@ -250,13 +111,9 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
           </div>
 
           <div className="mt-8 pt-5 border-t border-slate-100 dark:border-slate-805/10 flex justify-between items-center bg-transparent">
-            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">DCA Node Trigger: active</span>
-            <button
-              onClick={handleTriggerDca}
-              disabled={isSyncing}
-              className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              <span>{isSyncing ? 'Executing...' : 'Run Manual Sweep Now'}</span>
+            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">DCA Node Trigger: sol-09</span>
+            <button className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
+              <span>View schedules</span>
               <ChevronRight size={14} />
             </button>
           </div>
@@ -270,13 +127,13 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
                 PLAN SUMMARY
               </span>
               <h3 className="text-base font-bold mt-1 text-slate-900 dark:text-white">Execution Status</h3>
-              <p className="text-xs text-slate-455 mt-1">DCA status tracker.</p>
+              <p className="text-xs text-slate-450 mt-1">DCA status tracker.</p>
             </div>
 
             <div className="space-y-4">
               <div className="p-3 bg-slate-100/50 dark:bg-slate-900/35 rounded-xl space-y-1">
                 <span className="text-[9px] uppercase font-black text-slate-400 block tracking-widest">Next Scheduled Run</span>
-                <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">{dcaPlan.nextContributionReminder}</span>
+                <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">June 2, 2026</span>
                 <p className="text-[10px] text-slate-400 leading-normal mt-1">
                   Automatic withdrawal initiated at 00:00 UTC.
                 </p>
@@ -316,7 +173,7 @@ export default function DcaPlanTab({ dcaPlan, onUpdateDcaPlan, holdings, onTrigg
               {historicalContributions.map((log, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                   <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{log.date}</td>
-                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">{formatCurrency(log.total, financialSettings)}</td>
+                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${log.total.toFixed(2)}</td>
                   <td className="px-6 py-4 text-slate-500 font-mono italic">{log.breakdown}</td>
                   <td className="px-6 py-4 text-right">
                     <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/25 px-2.5 py-1 rounded-full border border-emerald-100/40">
