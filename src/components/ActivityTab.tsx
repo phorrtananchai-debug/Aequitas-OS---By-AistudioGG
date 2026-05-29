@@ -30,9 +30,7 @@ export default function ActivityTab({
 }: ActivityProps) {
   const [filterType, setFilterType] = useState<string>('all');
 
-  const safeActivities = activities || [];
-
-  const filteredActivities = safeActivities.filter(act => {
+  const filteredActivities = activities.filter(act => {
     const matchesSearch = 
       (act.notes || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       act.asset.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,7 +86,7 @@ export default function ActivityTab({
           </p>
         </div>
         <div className="flex gap-3 shrink-0 self-end sm:self-auto font-sans">
-          {safeActivities.length > 0 && (
+          {activities.length > 0 && (
             <button
               onClick={onClearActivities}
               className="px-3.5 py-2 hover:bg-rose-500/10 hover:text-rose-600 border border-transparent hover:border-rose-200/40 rounded-xl text-xs font-bold text-slate-400 active:scale-98 transition-all"

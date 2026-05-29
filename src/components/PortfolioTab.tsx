@@ -14,15 +14,13 @@ import {
   Compass,
   Calendar
 } from 'lucide-react';
-import { AlertItem, Holding, FinancialSettings } from '../types';
-import { formatCurrency } from '../core/utils';
+import { AlertItem, Holding } from '../types';
 
 interface PortfolioProps {
   portfolioValue: number;
   onUpdatePortfolio: (value: number) => void;
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
   holdings: Holding[];
-  financialSettings: FinancialSettings;
 }
 
 // Sparklines coordinates lists for hover integration
@@ -44,8 +42,7 @@ export default function PortfolioTab({
   portfolioValue,
   onUpdatePortfolio,
   onTriggerAlert,
-  holdings,
-  financialSettings
+  holdings
 }: PortfolioProps) {
   const [chartRange, setChartRange] = useState<'1H' | '1D' | '1W' | '1M'>('1M');
   const [alignmentStatus, setAlignmentStatus] = useState<'standard' | 'aligned'>('standard');
@@ -151,8 +148,8 @@ export default function PortfolioTab({
             {/* Metric 1 */}
             <div className="bg-white/95 dark:bg-slate-900/80 backdrop-blur-xl px-5 py-3.5 rounded-2xl flex flex-col gap-0.5 min-w-[140px] border border-slate-205/80 dark:border-slate-800/40 shadow-sm select-none">
               <span className="text-[9px] tracking-wider text-slate-400 dark:text-slate-500 uppercase font-extrabold">AGGREGATE GAIN</span>
-              <span className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 transition-all">
-                +{formatCurrency(gainLossTotal, financialSettings)}
+              <span className="text-2xl font-bold tracking-tight text-[#ba1a1a] dark:text-[#ffb4ab] transition-all">
+                +${gainLossTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
               <span className="text-emerald-650 dark:text-emerald-405 text-xs font-semibold flex items-center gap-0.5">
                 <ArrowUpRight size={13} strokeWidth={2.5} />
@@ -282,7 +279,7 @@ export default function PortfolioTab({
                   >
                     <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{hoverData.time}</div>
                     <div className="text-xs font-bold font-mono text-slate-900 dark:text-blue-500 mt-0.5">
-                      {formatCurrency(hoverData.balance, financialSettings)}
+                      ${hoverData.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </div>
                   </div>
                 )}
@@ -422,7 +419,7 @@ export default function PortfolioTab({
                     </div>
                   </div>
                   <span className="text-sm font-semibold font-mono text-slate-600 dark:text-slate-300">
-                    {formatCurrency(portfolioValue * 0.317, financialSettings)}
+                    $154,000
                   </span>
                 </div>
 
@@ -437,7 +434,7 @@ export default function PortfolioTab({
                     </div>
                   </div>
                   <span className="text-sm font-semibold font-mono text-blue-600 dark:text-blue-300">
-                    {formatCurrency(portfolioValue * 0.35, financialSettings)}
+                    $169,850
                   </span>
                 </div>
               </div>
@@ -469,7 +466,7 @@ export default function PortfolioTab({
                   <h4 className="text-xs font-semibold text-slate-800 dark:text-white group-hover:text-blue-600 transition-colors">Core ETF DCA</h4>
                   <p className="text-[10px] text-slate-400 mt-0.5 font-sans">Vanguard VOO accumulation flow.</p>
                 </div>
-                <span className="text-xs font-bold font-mono text-blue-600 dark:text-blue-300">{formatCurrency(1500, financialSettings)}/mo</span>
+                <span className="text-xs font-bold font-mono text-blue-600 dark:text-blue-300">$1,500/mo</span>
               </div>
 
               <div className="white-card p-4 rounded-2xl border-l-4 border-emerald-500 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-all cursor-pointer group flex justify-between items-center bg-white border border-slate-100 dark:bg-slate-950/20 dark:border-slate-900/40">
@@ -477,7 +474,7 @@ export default function PortfolioTab({
                   <h4 className="text-xs font-semibold text-slate-800 dark:text-white group-hover:text-emerald-650 transition-colors">Thai deductible SSF/RMF</h4>
                   <p className="text-[10px] text-slate-400 mt-0.5 font-sans">Kasikorn S&P RMF retirement support.</p>
                 </div>
-                <span className="text-xs font-bold font-mono text-emerald-650 dark:text-emerald-400">{formatCurrency(1200, financialSettings)}/mo</span>
+                <span className="text-xs font-bold font-mono text-emerald-650 dark:text-emerald-400">$1,200/mo</span>
               </div>
 
               <div className="white-card p-4 rounded-2xl border-l-4 border-purple-650 hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-all cursor-pointer group flex justify-between items-center bg-white border border-slate-100 dark:bg-slate-950/20 dark:border-slate-900/40">
@@ -485,7 +482,7 @@ export default function PortfolioTab({
                   <h4 className="text-xs font-semibold text-slate-800 dark:text-white group-hover:text-purple-650 transition-colors">Dividend Income Layer</h4>
                   <p className="text-[10px] text-slate-400 mt-0.5 font-sans">JEPQ overlay compounding plan.</p>
                 </div>
-                <span className="text-xs font-bold font-mono text-purple-600">{formatCurrency(800, financialSettings)}/mo</span>
+                <span className="text-xs font-bold font-mono text-purple-600">$800/mo</span>
               </div>
             </div>
           </div>

@@ -520,7 +520,7 @@ export default function StrategyTab({
                   <td colSpan={7} className="px-6 py-8 text-center text-xs text-slate-400">No matching simulation records found.</td>
                 </tr>
               ) : (
-                (filteredRuns || []).map((run) => (
+                filteredRuns.map((run) => (
                   <tr key={run.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors group">
                     <td className="px-6 py-4 text-xs font-mono font-bold text-slate-400 dark:text-slate-500">{run.id}</td>
                     

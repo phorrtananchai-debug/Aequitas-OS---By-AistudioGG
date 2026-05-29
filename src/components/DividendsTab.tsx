@@ -1,31 +1,12 @@
-import React, { useState } from 'react';
-import { Coins, TrendingUp, Calendar, Check, ArrowUpRight, Percent, Info, Plus, Edit3, Trash2, X } from 'lucide-react';
-import { Holding, DividendPlan, FinancialSettings, DividendPlanItem } from '../types';
-import { calculateDividendStats, formatCurrency } from '../core/utils';
+import { useState } from 'react';
+import { Coins, TrendingUp, Calendar, Check, ArrowUpRight, Percent, Info } from 'lucide-react';
 
-interface DividendsTabProps {
-  dividendPlan: DividendPlan;
-  onUpdateDividendPlan: (plan: DividendPlan) => void;
-  holdings: Holding[];
-  financialSettings: FinancialSettings;
-}
-
-export default function DividendsTab({ dividendPlan, onUpdateDividendPlan, holdings, financialSettings }: DividendsTabProps) {
+export default function DividendsTab() {
   const [compoundYears, setCompoundYears] = useState<number>(5);
   const [monthlyContribution, setMonthlyContribution] = useState<number>(1500);
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Form State
-  const [editSource, setEditSource] = useState('');
-  const [editYield, setEditYield] = useState('');
-  const [editAnnual, setEditAnnual] = useState('');
-  const [editFreq, setEditFreq] = useState('Monthly');
-  const [editStatus, setEditStatus] = useState<'Reinvest' | 'Hold Cash' | 'Transfer'>('Reinvest');
-
-  const dividendStats = calculateDividendStats(holdings);
-  const initialPrincipal = holdings.reduce((acc, h) => acc + h.value, 0);
-  const annualApy = dividendStats.weightedApy / 100;
+  const initialPrincipal = 485000;
+  const annualApy = 0.072; // 7.2% average apy
 
   // Calculate compound interest
   // A = P(1 + r/n)^(nt) + PMT * (((1 + r/n)^(nt) - 1) / (r/n)) * (1 + r/n) (assuming payments at start of period)
@@ -42,125 +23,33 @@ export default function DividendsTab({ dividendPlan, onUpdateDividendPlan, holdi
     return Math.round(baseAmount + annuityAmount);
   };
 
-  const handleAdd = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editSource) return;
-    const newItem: DividendPlanItem = {
-      id: `div-${Date.now()}`,
-      ticker: editSource.split(' ')[0].toUpperCase(),
-      name: editSource,
-      yield: parseFloat(editYield) || 0,
-      annualEst: parseFloat(editAnnual) || 0,
-      frequency: editFreq,
-      reinvestmentStatus: editStatus
-    };
-    onUpdateDividendPlan({
-      ...dividendPlan,
-      items: [...dividendPlan.items, newItem]
-    });
-    setIsAdding(false);
-    resetForm();
-  };
-
-  const handleEdit = (item: DividendPlanItem) => {
-    setEditingId(item.id);
-    setEditSource(item.name);
-    setEditYield(item.yield.toString());
-    setEditAnnual(item.annualEst.toString());
-    setEditFreq(item.frequency);
-    setEditStatus(item.reinvestmentStatus);
-  };
-
-  const handleSaveEdit = (id: string) => {
-    const nextItems = dividendPlan.items.map(item => item.id === id ? {
-      ...item,
-      name: editSource,
-      ticker: editSource.split(' ')[0].toUpperCase(),
-      yield: parseFloat(editYield) || 0,
-      annualEst: parseFloat(editAnnual) || 0,
-      frequency: editFreq,
-      reinvestmentStatus: editStatus
-    } : item);
-    onUpdateDividendPlan({ ...dividendPlan, items: nextItems });
-    setEditingId(null);
-    resetForm();
-  };
-
-  const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Delete dividend rule for ${name}?`)) {
-      onUpdateDividendPlan({
-        ...dividendPlan,
-        items: dividendPlan.items.filter(i => i.id !== id)
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setEditSource('');
-    setEditYield('');
-    setEditAnnual('');
-    setEditFreq('Monthly');
-    setEditStatus('Reinvest');
-  };
+  const dividendEvents = [
+    { id: 'DIV-101', source: 'L1 Staking Yield (SOL)', amount: 480.00, frequency: 'Weekly', estimateDate: 'Jun 1, 2026', status: 'PENDING' },
+    { id: 'DIV-102', source: 'USDC Treasury Yield', amount: 350.00, frequency: 'Monthly', estimateDate: 'Jun 3, 2026', status: 'PENDING' },
+    { id: 'DIV-103', source: 'Sovereign Buffer Notes', amount: 620.00, frequency: 'Monthly', estimateDate: 'Jun 5, 2026', status: 'PENDING' },
+    { id: 'DIV-104', source: 'L2 Liquidity Provider Yield', amount: 1450.00, frequency: 'Monthly', estimateDate: 'May 20, 2026', status: 'COMPLETED' },
+  ];
 
   return (
     <div className="space-y-8 animate-fade-in text-slate-800 dark:text-[#F4EEE4] pb-12">
       {/* Title block */}
-      <section className="flex justify-between items-end">
-        <div>
-          <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
-            RECURRING CAPITAL GENERATOR
-          </span>
-          <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
-            Dividends & Yield
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-            Track upcoming dividend payouts, compound interest paths, and review recurring yield statistics.
-          </p>
-        </div>
-        <button
-          onClick={() => { setIsAdding(true); resetForm(); }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5 mb-1"
-        >
-          <Plus size={14} />
-          Add Yield Rule
-        </button>
+      <section>
+        <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
+          RECURRING CAPITAL GENERATOR
+        </span>
+        <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
+          Dividends & Yield
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+          Track upcoming dividend payouts, compound interest paths, and review recurring yield statistics.
+        </p>
       </section>
-
-      {isAdding && (
-        <div className="p-6 bg-blue-50/30 dark:bg-slate-900/40 border border-blue-200/50 dark:border-slate-800 rounded-3xl animate-slide-in">
-          <form onSubmit={handleAdd} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input value={editSource} onChange={e => setEditSource(e.target.value)} placeholder="Source (e.g. VOO Dividends)" className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 text-xs" />
-              <input value={editYield} onChange={e => setEditYield(e.target.value)} placeholder="Yield %" type="number" step="0.01" className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 text-xs" />
-              <input value={editAnnual} onChange={e => setEditAnnual(e.target.value)} placeholder="Annual Est $" type="number" step="0.01" className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 text-xs" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <select value={editFreq} onChange={e => setEditFreq(e.target.value)} className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 text-xs">
-                <option value="Monthly">Monthly</option>
-                <option value="Quarterly">Quarterly</option>
-                <option value="Annual">Annual</option>
-                <option value="Weekly">Weekly</option>
-              </select>
-              <select value={editStatus} onChange={e => setEditStatus(e.target.value as any)} className="bg-white dark:bg-slate-950 p-2 rounded-xl border border-slate-200 text-xs">
-                <option value="Reinvest">Reinvest</option>
-                <option value="Hold Cash">Hold Cash</option>
-                <option value="Transfer">Transfer</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setIsAdding(false)} className="px-3 py-1.5 text-xs font-bold text-slate-500">Cancel</button>
-              <button type="submit" className="px-4 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg">Save Rule</button>
-            </div>
-          </form>
-        </div>
-      )}
 
       {/* Overview Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Monthly Yield Est.</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{formatCurrency(dividendStats.monthlyEst, financialSettings)}</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">$3,150.00</span>
           <p className="text-[10px] text-emerald-600 font-bold uppercase mt-2 flex items-center gap-0.5">
             <ArrowUpRight size={10} /> +4.2% from last cycle
           </p>
@@ -168,13 +57,13 @@ export default function DividendsTab({ dividendPlan, onUpdateDividendPlan, holdi
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Weighted System APY</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{dividendStats.weightedApy.toFixed(2)}%</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">7.20%</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Compounding active</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Upcoming Payout Scheduled</span>
-          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">{formatCurrency(dividendStats.annualEst / 12, financialSettings)}</span>
+          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">$1,450.00</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 flex items-center gap-1">
             <Calendar size={10} /> June 1, 2026
           </p>
@@ -200,65 +89,24 @@ export default function DividendsTab({ dividendPlan, onUpdateDividendPlan, holdi
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-850 font-sans text-xs">
-              {dividendPlan.items.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic">No yield rules configured.</td>
+              {dividendEvents.map((event) => (
+                <tr key={event.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
+                  <td className="px-6 py-4 font-mono font-bold text-slate-400">{event.id}</td>
+                  <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{event.source}</td>
+                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${event.amount.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-slate-500">{event.frequency}</td>
+                  <td className="px-6 py-4 text-slate-500">{event.estimateDate}</td>
+                  <td className="px-6 py-4 text-right">
+                    <span className={`text-[9px] px-2.5 py-1 rounded-full font-black tracking-wider uppercase ${
+                      event.status === 'COMPLETED'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                        : 'bg-amber-50 text-amber-700 border border-amber-100'
+                    }`}>
+                      {event.status}
+                    </span>
+                  </td>
                 </tr>
-              ) : (
-                dividendPlan.items.map((item) => {
-                  const isEditing = editingId === item.id;
-                  return (
-                    <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-slate-400">
-                        {isEditing ? 'EDITING' : item.id.substring(0, 8)}
-                      </td>
-                      <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">
-                        {isEditing ? (
-                          <input value={editSource} onChange={e => setEditSource(e.target.value)} className="w-full bg-transparent border-b border-blue-500 focus:outline-none" />
-                        ) : item.name}
-                      </td>
-                      <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">
-                        {isEditing ? (
-                          <div className="flex items-center gap-1">
-                            <span className="text-slate-400">$</span>
-                            <input value={editAnnual} onChange={e => setEditAnnual(e.target.value)} className="w-16 bg-transparent border-b border-blue-500 focus:outline-none text-right" />
-                          </div>
-                        ) : formatCurrency(item.annualEst, financialSettings)}
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {isEditing ? (
-                          <select value={editFreq} onChange={e => setEditFreq(e.target.value)} className="bg-transparent focus:outline-none">
-                            <option value="Monthly">Monthly</option>
-                            <option value="Quarterly">Quarterly</option>
-                            <option value="Weekly">Weekly</option>
-                          </select>
-                        ) : item.frequency}
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {isEditing ? (
-                          <select value={editStatus} onChange={e => setEditStatus(e.target.value as any)} className="bg-transparent focus:outline-none">
-                            <option value="Reinvest">Reinvest</option>
-                            <option value="Hold Cash">Hold Cash</option>
-                          </select>
-                        ) : item.reinvestmentStatus}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        {isEditing ? (
-                          <div className="flex gap-2 justify-end">
-                            <button onClick={() => setEditingId(null)} className="p-1 text-slate-400"><X size={14}/></button>
-                            <button onClick={() => handleSaveEdit(item.id)} className="p-1 text-emerald-600"><Check size={14}/></button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2 justify-end">
-                            <button onClick={() => handleEdit(item)} className="p-1 text-slate-400 hover:text-blue-600"><Edit3 size={14}/></button>
-                            <button onClick={() => handleDelete(item.id, item.name)} className="p-1 text-slate-400 hover:text-rose-600"><Trash2 size={14}/></button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+              ))}
             </tbody>
           </table>
         </div>
@@ -296,7 +144,7 @@ export default function DividendsTab({ dividendPlan, onUpdateDividendPlan, holdi
               <div className="space-y-1.5 text-xs font-bold text-slate-655 shrink-0">
                 <div className="flex justify-between items-baseline">
                   <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Estimated Monthly DCA Contribution (USD)</label>
-                  <span className="font-mono text-blue-600 font-bold">{formatCurrency(monthlyContribution, financialSettings)} / mo</span>
+                  <span className="font-mono text-blue-600 font-bold">${monthlyContribution.toLocaleString()} / mo</span>
                 </div>
                 <input 
                   type="range"
@@ -314,10 +162,10 @@ export default function DividendsTab({ dividendPlan, onUpdateDividendPlan, holdi
           <div className="mt-8 p-5 bg-blue-50/20 dark:bg-slate-900/10 border border-blue-105/20 dark:border-slate-800/10 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
             <div>
               <span className="text-[9px] text-slate-400 uppercase font-black block tracking-widest">Projected Core Value ({compoundYears}yr)</span>
-              <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">{formatCurrency(calculateEstimate(), financialSettings)}</span>
+              <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">${calculateEstimate().toLocaleString()}</span>
             </div>
             <div className="text-[11px] text-slate-400 font-medium text-left sm:text-right max-w-sm">
-              Includes initial core balance of <strong className="text-slate-600 dark:text-slate-350">{formatCurrency(initialPrincipal, financialSettings)}</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">{(annualApy * 100).toFixed(2)}% APY</strong>.
+              Includes initial core balance of <strong className="text-slate-600 dark:text-slate-350">$485,000</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">7.20% APY</strong>.
             </div>
           </div>
         </div>

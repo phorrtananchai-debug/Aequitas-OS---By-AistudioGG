@@ -10,19 +10,14 @@ import {
   Clock,
   ShieldAlert
 } from 'lucide-react';
-import { DailyBrief, Holding, FinancialSettings } from '../types';
-import { calculateLayerStats, calculatePortfolioDrift, formatCurrency } from '../core/utils';
+import { DailyBrief } from '../types';
 
 interface DailyBriefProps {
   portfolioValue: number;
   dailyBrief: DailyBrief;
-  holdings: Holding[];
-  financialSettings: FinancialSettings;
 }
 
-export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings, financialSettings }: DailyBriefProps) {
-  const layerStats = calculateLayerStats(holdings);
-  const drift = calculatePortfolioDrift(holdings);
+export default function DailyBriefTab({ portfolioValue, dailyBrief }: DailyBriefProps) {
   const today = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -63,11 +58,9 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings, fi
                 <h3 className="text-lg font-bold tracking-tight mt-1 text-slate-900 dark:text-white">Active Core Balance</h3>
               </div>
               <div className="text-right">
-                <span className="text-3xl font-black text-slate-900 dark:text-white">
-                  {formatCurrency(portfolioValue, financialSettings)}
-                </span>
+                <span className="text-3xl font-black text-slate-900 dark:text-white">${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 <p className="text-[10px] text-emerald-650 font-bold uppercase mt-1 flex items-center justify-end gap-0.5">
-                  <ArrowUpRight size={10} /> {financialSettings.showThbTotals ? `~ $${portfolioValue.toLocaleString()}` : '+2.48% relative growth'}
+                  <ArrowUpRight size={10} /> +2.48% relative growth
                 </p>
               </div>
             </div>
@@ -78,19 +71,19 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings, fi
                 <div className="space-y-2 font-sans">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Core S&P 500 ETF Layers</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.core.pct}%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">31.7%</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Growth Equities Layer</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.growth.pct}%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">44.3%</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Thai Fund Tax Wrapper</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.tax.pct}%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">12.4%</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Behavior Dividend Layer</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{layerStats.dividend.pct}%</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">8.5%</span>
                   </div>
                 </div>
               </div>
@@ -100,7 +93,7 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings, fi
                 <div className="space-y-2 font-sans">
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-500 font-medium">Overall Drift Marker</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">{drift}% {drift <= 3.5 ? '(Tolerable)' : '(Action Needed)'}</span>
+                    <span className="font-mono font-bold text-slate-800 dark:text-slate-350">3.2% (Tolerable)</span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-slate-550 font-medium">Tax Wrapper Efficiency</span>
@@ -143,7 +136,7 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings, fi
               </div>
               <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-100 dark:border-slate-805/10">
                 <span className="text-slate-550 font-medium font-sans">USD/THB FX conversion</span>
-                <span className="font-mono font-bold text-emerald-600">{financialSettings.usdThbRate} THB</span>
+                <span className="font-mono font-bold text-emerald-600">36.45 THB</span>
               </div>
             </div>
 
@@ -153,7 +146,7 @@ export default function DailyBriefTab({ portfolioValue, dailyBrief, holdings, fi
               <div>
                 <h4 className="text-xs font-bold text-amber-850 dark:text-amber-400 font-sans">{dailyBrief.dividendReminder ? "Income Schedule" : "Upcoming Yield"}</h4>
                 <p className="text-[10px] text-amber-700 dark:text-amber-500 mt-0.5 leading-normal">
-                  {dailyBrief.dividendReminder ? `${dailyBrief.dividendReminder} (${formatCurrency(parseFloat(dailyBrief.dividendReminder.replace(/[^0-9.]/g, '')), financialSettings)})` : "Passive stock cash flows calculated in core layers for automated reinvestment."}
+                  {dailyBrief.dividendReminder ?? "Passive stock cash flows calculated in core layers for automated reinvestment."}
                 </p>
               </div>
             </div>

@@ -1,6 +1,4 @@
 import React, { useState, FormEvent } from 'react';
-import { MigrationStatus, FinancialSettings } from '../types';
-import { getCanonicalBackupSummary } from '../core/recovery';
 import { 
   Settings as SettingsIcon, 
   ShieldAlert, 
@@ -17,43 +15,27 @@ import {
   Laptop,
   CheckCircle2,
   FolderLock,
-  Search,
   Workflow,
   Wrench,
   HelpCircle,
   ToggleLeft,
   ToggleRight,
   ChevronRight,
-  CircleDot,
-  Zap
+  CircleDot
 } from 'lucide-react';
-
-type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs' | 'legacy';
 
 interface SettingsTabProps {
   portfolioValue: number;
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
-  migrationStatus: MigrationStatus | null;
-  financialSettings: FinancialSettings;
-  onUpdateFinancialSettings: (settings: FinancialSettings) => void;
-  onImportLegacyToCloud?: () => void;
-  onDiscoverCloudData?: () => void;
-  onRecoverFromBackup?: () => void;
-  workspaceMode: 'cloud' | 'local' | 'demo';
 }
+
+type SettingsSection = 'general' | 'portfolio' | 'aiServices' | 'syncStorage' | 'labs';
 
 export default function SettingsTab({
   portfolioValue,
   onUpdatePortfolio,
-  onTriggerAlert,
-  migrationStatus,
-  financialSettings,
-  onUpdateFinancialSettings,
-  onImportLegacyToCloud,
-  onDiscoverCloudData,
-  onRecoverFromBackup,
-  workspaceMode
+  onTriggerAlert
 }: SettingsTabProps) {
   // Active settings tab category
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -65,17 +47,11 @@ export default function SettingsTab({
   const [motion, setMotion] = useState<'smooth' | 'reduced' | 'none'>('smooth');
 
   // Portfolio state
-  const [baseCurrency, setBaseCurrency] = useState<string>(financialSettings.baseCurrency);
-  const [usdThbRate, setUsdThbRate] = useState<string>(financialSettings.usdThbRate.toString());
-  const [showThbTotals, setShowThbTotals] = useState<boolean>(financialSettings.showThbTotals);
-  const [preferThaiNav, setPreferThaiNav] = useState<boolean>(financialSettings.preferThaiNav);
-
+  const [baseCurrency, setBaseCurrency] = useState<string>('USD');
   const [dividendPref, setDividendPref] = useState<string>('compound');
   const [dcaInterval, setDcaInterval] = useState<string>('weekly');
   const [ledgerVal, setLedgerVal] = useState<string>(portfolioValue.toString());
   const [nodeId, setNodeId] = useState<string>('sol-09');
-  const [finnhubKey, setFinnhubKey] = useState<string>(financialSettings.finnhubKey || '');
-  const [showFinnhubKey, setShowFinnhubKey] = useState<boolean>(false);
 
   // AI Services state (Strictly Optional & Enhanced)
   const [aiProvider, setAiProvider] = useState<string>('gemini');
@@ -92,9 +68,6 @@ export default function SettingsTab({
   const [gdriveSync, setGdriveSync] = useState<boolean>(false);
   const [brokerFuture, setBrokerFuture] = useState<boolean>(false);
 
-  // Recovery
-  const [backupSummary] = useState(getCanonicalBackupSummary());
-
   // Labs
   const [experimentalFeatures, setExperimentalFeatures] = useState<boolean>(false);
   const [sandboxMode, setSandboxMode] = useState<boolean>(true);
@@ -109,15 +82,6 @@ export default function SettingsTab({
       if (!isNaN(numericVal) && numericVal > 0) {
         onUpdatePortfolio(numericVal);
       }
-
-      onUpdateFinancialSettings({
-        baseCurrency,
-        usdThbRate: parseFloat(usdThbRate) || 36.45,
-        showThbTotals,
-        preferThaiNav,
-        finnhubKey
-      });
-
       setIsSaving(false);
       onTriggerAlert({
         type: 'success',
@@ -133,7 +97,6 @@ export default function SettingsTab({
     { id: 'portfolio' as SettingsSection, label: 'Portfolio Parameters', icon: Database, text: 'Base currencies & limits' },
     { id: 'aiServices' as SettingsSection, label: 'AI Services Layer', icon: Sparkles, text: 'Optional intelligence & APIs', tag: 'OPTIONAL' },
     { id: 'syncStorage' as SettingsSection, label: 'Sync & Local Storage', icon: FolderLock, text: 'Snapshot backup & encryption' },
-    { id: 'legacy' as SettingsSection, label: 'Legacy Data Vault', icon: Database, text: 'Old data & recovery audit', tag: 'RECOVERY' },
     { id: 'labs' as SettingsSection, label: 'Experimental Labs', icon: Wrench, text: 'Sandbox simulations', tag: 'LABS' },
   ];
 
@@ -290,50 +253,6 @@ export default function SettingsTab({
                     </div>
                   </div>
 
-                  {/* THB / FX Settings */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-655 block uppercase tracking-wider">USD/THB FX Rate</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={usdThbRate}
-                        onChange={(e) => setUsdThbRate(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 text-slate-950 dark:text-white rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                    <div className="space-y-2 flex flex-col justify-center pt-4">
-                      <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800">
-                        <div>
-                          <span className="font-bold text-xs block text-slate-800 dark:text-slate-200">Show THB Totals</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowThbTotals(!showThbTotals)}
-                          className="text-blue-600"
-                        >
-                          {showThbTotals ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800">
-                      <div>
-                        <span className="font-bold text-xs block text-slate-800 dark:text-slate-200">Prefer Thai Fund NAV over Google Sheets</span>
-                        <span className="text-[10px] text-slate-400 block">Uses manually entered NAV from Thai Fund Sync tool.</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPreferThaiNav(!preferThaiNav)}
-                        className="text-blue-600"
-                      >
-                        {preferThaiNav ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
-                      </button>
-                    </div>
-                  </div>
-
                   {/* Dynamic Motion Preferences */}
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-655 block uppercase tracking-wider">Animation Motion</label>
@@ -381,36 +300,6 @@ export default function SettingsTab({
                         <option value="eth-03">eth-03 (Backup Consensus Validator RPC)</option>
                         <option value="btc-01">btc-01 (Sovereign Bitcoin Ledger Index)</option>
                       </select>
-                    </div>
-                  </div>
-
-                  {/* Market Data API Keys */}
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-slate-655 block uppercase tracking-wider">Finnhub API Key</label>
-                      <div className="relative">
-                        <KeyRound size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                          type={showFinnhubKey ? 'text' : 'password'}
-                          value={finnhubKey}
-                          onChange={(e) => setFinnhubKey(e.target.value)}
-                          placeholder="FINNHUB_SANDBOX_KEY"
-                          className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 text-slate-950 dark:text-white rounded-xl pl-10 pr-10 py-3 text-xs focus:outline-none focus:border-blue-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowFinnhubKey(!showFinnhubKey)}
-                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        >
-                          {showFinnhubKey ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                      </div>
-                      {!finnhubKey && (
-                        <div className="flex items-center gap-1.5 p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-bold">
-                          <ShieldAlert size={12} />
-                          Manual Price Mode Active: Live USD pricing disabled.
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -628,40 +517,6 @@ export default function SettingsTab({
                       <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 text-[9px] font-bold rounded-full border border-emerald-100 uppercase">ACTIVE COHERENCE</span>
                     </div>
 
-                    {/* Firebase API Warning */}
-                    {import.meta.env.VITE_FIREBASE_API_KEY === undefined && (
-                      <div className="flex items-start gap-3 p-4 bg-rose-500/5 rounded-2xl border border-rose-500/10 mb-4">
-                        <ShieldAlert className="text-rose-500 shrink-0" size={18} />
-                        <div className="text-left">
-                          <h4 className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider mb-0.5">Firebase Configuration Missing</h4>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                            VITE_FIREBASE_* environment variables are not detected. Cloud sync and authentication may fail.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Cloud Discovery Option */}
-                    {workspaceMode === 'cloud' && (
-                      <div className="flex justify-between items-center bg-blue-50/20 dark:bg-blue-950/10 p-3.5 border border-blue-100/30 dark:border-blue-900/20 rounded-2xl">
-                        <div>
-                          <span className="font-bold text-slate-900 dark:text-white block flex items-center gap-1.5">
-                            <Sparkles size={14} className="text-blue-600" />
-                            Deep Cloud Discovery
-                          </span>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">Search for existing portfolios across legacy Firestore paths.</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={onDiscoverCloudData}
-                          className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-all active:scale-95"
-                        >
-                          <Search size={12} />
-                          Discover
-                        </button>
-                      </div>
-                    )}
-
                     {/* Google Drive sync Option */}
                     <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
                       <div>
@@ -685,37 +540,6 @@ export default function SettingsTab({
                       </button>
                     </div>
 
-                    {/* Migration Status */}
-                    {migrationStatus && (
-                      <div className="p-4 rounded-2xl bg-blue-50/40 dark:bg-slate-900/10 border border-blue-100/30 dark:border-slate-800/10 space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-black uppercase text-blue-600 dark:text-blue-400">Production Migration Status</span>
-                          <span className="text-[10px] font-mono text-slate-400">{migrationStatus.migratedAt ? new Date(migrationStatus.migratedAt).toLocaleString() : 'N/A'}</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-[11px]">
-                          <div>
-                            <span className="text-slate-400 block">Data Source</span>
-                            <span className="font-bold text-slate-700 dark:text-slate-300">{migrationStatus.source}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 block">Status</span>
-                            <span className="font-bold text-emerald-600">Sync Active</span>
-                          </div>
-                        </div>
-                        {migrationStatus.detectedLegacyKeys && migrationStatus.detectedLegacyKeys.length > 0 && (
-                          <div className="mt-2">
-                            <span className="text-[9px] text-slate-400 block uppercase font-bold">Detected Legacy Keys</span>
-                            <p className="text-[9px] text-slate-500 font-mono break-all">{migrationStatus.detectedLegacyKeys.join(', ')}</p>
-                          </div>
-                        )}
-                        {migrationStatus.warnings.length > 0 && (
-                          <div className="mt-2 p-2 rounded bg-rose-50 dark:bg-rose-950/20 text-rose-600 text-[9px]">
-                            {migrationStatus.warnings.join(', ')}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* Future broker integration option */}
                     <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
                       <div>
@@ -738,184 +562,6 @@ export default function SettingsTab({
                         {brokerFuture ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
                       </button>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SECTION: LEGACY DATA RECOVERY */}
-              {activeSection === 'legacy' && (
-                <div className="space-y-6 animate-fade-in">
-                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800/15 flex justify-between items-end">
-                    <div>
-                      <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 block pb-1">Legacy Data Recovery & Continuity</span>
-                      <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Migration Coverage Audit</h3>
-                    </div>
-                    <div className="flex gap-2">
-                      {workspaceMode === 'cloud' && migrationStatus?.detectedLegacyKeys && migrationStatus.detectedLegacyKeys.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (migrationStatus?.summary) {
-                              const confirmText = `Are you sure you want to import this legacy portfolio to the cloud?
-- Holdings: ${migrationStatus.summary.holdingsCount}
-- Value: $${migrationStatus.summary.totalValue.toLocaleString()}
-- Symbols: ${migrationStatus.summary.symbols.join(', ')}
-
-This will overwrite your existing cloud workspace.`;
-                              if (window.confirm(confirmText)) {
-                                onImportLegacyToCloud?.();
-                              }
-                            } else {
-                              onImportLegacyToCloud?.();
-                            }
-                          }}
-                          className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 transition-all"
-                        >
-                          <Zap size={12} />
-                          Import to Cloud
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => window.location.reload()}
-                        className="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 dark:bg-blue-950/30 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 transition-all"
-                      >
-                        <RefreshCw size={12} />
-                        Rescan Storage
-                      </button>
-                    </div>
-                  </div>
-
-                  <p className="text-slate-550 leading-relaxed text-[11px]">
-                    To maintain product continuity, Aequitas OS audits your local storage for legacy data. Below is a real-time coverage report of detected legacy keys.
-                  </p>
-
-                  <div className="space-y-4">
-                    {/* Coverage Stats */}
-                    {migrationStatus?.coverageReport && (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800">
-                          <span className="text-[8px] font-black text-slate-400 uppercase block tracking-widest">Detected</span>
-                          <span className="text-xl font-bold text-slate-900 dark:text-white">{migrationStatus.coverageReport.detected.length}</span>
-                        </div>
-                        <div className="p-3 bg-emerald-50/40 dark:bg-emerald-950/10 rounded-xl border border-emerald-100/30 dark:border-emerald-800/20">
-                          <span className="text-[8px] font-black text-emerald-600 uppercase block tracking-widest">Migrated</span>
-                          <span className="text-xl font-bold text-emerald-600">{migrationStatus.coverageReport.migrated.length}</span>
-                        </div>
-                        <div className="p-3 bg-blue-50/40 dark:bg-blue-950/10 rounded-xl border border-blue-100/30 dark:border-blue-800/20">
-                          <span className="text-[8px] font-black text-blue-600 uppercase block tracking-widest">Ignored</span>
-                          <span className="text-xl font-bold text-blue-600">{migrationStatus.coverageReport.ignored.length}</span>
-                        </div>
-                        <div className="p-3 bg-amber-50/40 dark:bg-amber-950/10 rounded-xl border border-amber-100/30 dark:border-amber-800/20">
-                          <span className="text-[8px] font-black text-amber-600 uppercase block tracking-widest">Vaulted</span>
-                          <span className="text-xl font-bold text-amber-600">{migrationStatus.coverageReport.unsupported.length}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Detailed Key List */}
-                    <div className="glass-panel overflow-hidden rounded-2xl border border-slate-205/60 dark:border-slate-800/25">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-[11px] font-sans">
-                          <thead>
-                            <tr className="bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800/45">
-                              <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">Legacy Key</th>
-                              <th className="px-4 py-3 font-black text-slate-400 uppercase tracking-widest">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
-                            {migrationStatus?.coverageReport?.detected.map(key => {
-                              const report = migrationStatus.coverageReport!;
-                              const status = report.migrated.includes(key) ? 'Migrated' :
-                                           report.ignored.includes(key) ? 'Ignored' : 'Unsupported';
-
-                              return (
-                                <tr key={key} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/20">
-                                  <td className="px-4 py-3 font-mono text-slate-600 dark:text-slate-400">{key}</td>
-                                  <td className="px-4 py-3">
-                                    <span className={`px-2 py-0.5 rounded-full font-bold text-[9px] uppercase ${
-                                      status === 'Migrated' ? 'bg-emerald-50 text-emerald-700' :
-                                      status === 'Ignored' ? 'bg-blue-50 text-blue-700' : 'bg-amber-50 text-amber-700'
-                                    }`}>
-                                      {status}
-                                    </span>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                            {(!migrationStatus?.coverageReport?.detected || migrationStatus.coverageReport.detected.length === 0) && (
-                              <tr>
-                                <td colSpan={2} className="px-4 py-8 text-center text-slate-400 italic">No legacy aequitas_* keys detected in local storage.</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* CANONICAL RECOVERY BLOCK */}
-                    <div className="p-5 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-black uppercase text-amber-600 block">Canonical System Recovery</span>
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white">Full OS Backup Found</h4>
-                          <p className="text-[11px] text-slate-500 leading-relaxed">
-                            A verified full system backup from <strong>{new Date(backupSummary.exportedAt).toLocaleDateString()}</strong> is available for recovery.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const confirmText = `SYSTEM RECOVERY PROTOCOL
-------------------------
-This will restore your workspace from the canonical backup:
-- Positions: ${backupSummary.holdingsCount}
-- Value: $${backupSummary.totalValue.toLocaleString()}
-- Symbols: ${backupSummary.symbols.join(', ')}
-
-WARNING: This will replace your current workspace state and create a Golden Recovery Snapshot.
-
-Proceed with recovery?`;
-                            if (window.confirm(confirmText)) {
-                              onRecoverFromBackup?.();
-                            }
-                          }}
-                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
-                        >
-                          <RefreshCw size={13} />
-                          Confirm Recovery
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-4 pt-2">
-                        <div className="px-3 py-2 bg-white dark:bg-slate-900/50 rounded-xl border border-amber-200/30">
-                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Assets</span>
-                          <span className="text-sm font-black text-amber-600">{backupSummary.holdingsCount}</span>
-                        </div>
-                        <div className="px-3 py-2 bg-white dark:bg-slate-900/50 rounded-xl border border-amber-200/30 col-span-2">
-                          <span className="text-[9px] text-slate-400 uppercase font-bold block">Total Valuation</span>
-                          <span className="text-sm font-black text-amber-600">${backupSummary.totalValue.toLocaleString()}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Unmapped Data Vault */}
-                    {migrationStatus?.unmappedLegacyData && Object.keys(migrationStatus.unmappedLegacyData).length > 0 && (
-                      <div className="space-y-3 pt-2">
-                        <div className="flex items-center gap-2 text-amber-600">
-                          <FolderLock size={16} />
-                          <span className="text-[10px] font-black uppercase tracking-widest leading-none">Safe Data Vault (Raw JSON)</span>
-                        </div>
-                        <div className="bg-slate-950 rounded-xl p-4 overflow-hidden border border-slate-800">
-                          <pre className="text-[10px] text-amber-400 font-mono overflow-auto max-h-60 leading-relaxed scrollbar-thin">
-                            {JSON.stringify(migrationStatus.unmappedLegacyData, null, 2)}
-                          </pre>
-                        </div>
-                        <p className="text-[10px] text-slate-400 italic leading-relaxed">
-                          This data structure was detected but is not yet natively supported by the new OS UI. It is stored safely and can be copied or audited manually.
-                        </p>
-                      </div>
-                    )}
                   </div>
                 </div>
               )}

@@ -1,8 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
-import { User } from 'firebase/auth';
-import { migrateData, saveState, fetchStateFromFirestore, mapBackupToState, saveStateToFirestore } from './core/storage';
-import { getCanonicalBackupState } from './core/recovery';
-import AuthGate from './components/AuthGate';
+import { useState, useEffect } from 'react';
 import { 
   AlertItem, 
   TabType, 
@@ -16,15 +12,12 @@ import {
   ActivityItem, 
   ChatMessage, 
   ThaiFundNavState,
-  AiImportSchema,
-  MigrationStatus,
-  FinancialSettings
+  AiImportSchema
 } from './types';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import OverviewTab from './components/OverviewTab';
 import PortfolioTab from './components/PortfolioTab';
-import { calculatePortfolioDrift } from './core/utils';
 import StrategyTab from './components/StrategyTab'; // Used for Labs
 import MarketsTab from './components/MarketsTab'; // Refactored to Holdings
 import AIInsightsTab from './components/AIInsightsTab'; // AI Advisor Workspace
@@ -39,7 +32,6 @@ import AllocationTab from './components/AllocationTab';
 import SettingsTab from './components/SettingsTab';
 import AIWorkflowTab from './components/AIWorkflowTab';
 import SnapshotsTab from './components/SnapshotsTab';
-import WatchlistTab from './components/WatchlistTab';
 
 // Initial Mock Datasets
 const INITIAL_NOTIFICATION_QUEUE: AlertItem[] = [
@@ -158,41 +150,23 @@ const INITIAL_LABS_SUGGESTIONS: LabsSuggestion[] = [
 ];
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [workspaceMode, setWorkspaceMode] = useState<'cloud' | 'local' | 'demo'>('local');
-  const [isHydrating, setIsHydrating] = useState(true);
-
-  const [activeTab, setActiveTab] = useState<TabType>(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      if (path === '/os' || path === '/dashboard') return 'dashboard';
-    }
-    return 'portfolio';
-  });
-  const [portfolioValue, setPortfolioValue] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<TabType>('portfolio');
+  const [portfolioValue, setPortfolioValue] = useState<number>(485290.00);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [darkMode, setDarkMode] = useState<boolean>(false);
 
   // Core App State Matrices
-  const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [holdings, setHoldings] = useState<Holding[]>(INITIAL_HOLDINGS);
   const [dcaPlan, setDcaPlan] = useState<DcaPlan>(INITIAL_DCA_PLAN);
   const [dividendPlan, setDividendPlan] = useState<DividendPlan>(INITIAL_DIVIDEND_PLAN);
   const [dailyBrief, setDailyBrief] = useState<DailyBrief>(INITIAL_DAILY_BRIEF);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
   const [thaiFundNavs, setThaiFundNavs] = useState<ThaiFundNavState[]>(INITIAL_THAI_FUND_NAVS);
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
-  const [labsSuggestions, setLabsSuggestions] = useState<LabsSuggestion[]>([]);
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>(INITIAL_WATCHLIST);
+  const [labsSuggestions, setLabsSuggestions] = useState<LabsSuggestion[]>(INITIAL_LABS_SUGGESTIONS);
   const [notifications, setNotifications] = useState<AlertItem[]>(INITIAL_NOTIFICATION_QUEUE);
   const [latestAiImportPlan, setLatestAiImportPlan] = useState<AiImportSchema | null>(null);
   const [aiImportStatus, setAiImportStatus] = useState<string>('Offline Schema Mode: Default core parameters preloaded.');
-  const [migrationStatus, setMigrationStatus] = useState<MigrationStatus | null>(null);
-  const [financialSettings, setFinancialSettings] = useState<FinancialSettings>({
-    baseCurrency: 'USD',
-    usdThbRate: 36.45,
-    showThbTotals: true,
-    preferThaiNav: true
-  });
 
   // Simulated Simulation model backups
   const [simulations, setSimulations] = useState<any[]>([
@@ -208,122 +182,6 @@ export default function App() {
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
-
-  // 1. App Hydration Logic (Cloud -> Local -> Migration)
-  useEffect(() => {
-    if (!user && workspaceMode !== 'demo') return;
-
-    const hydrate = async () => {
-      setIsHydrating(true);
-      const uid = user?.uid;
-
-      // Try Cloud first
-      if (uid) {
-        try {
-          const cloudState = await fetchStateFromFirestore(uid);
-          if (cloudState) {
-            applyState(cloudState);
-            setWorkspaceMode('cloud');
-            setIsHydrating(false);
-            return;
-          }
-        } catch (e) {
-          console.warn("[Aequitas OS] Cloud discovery bypassed due to error (likely permissions). Falling back to local.", e);
-        }
-      }
-
-      // Try Namespaced Local Storage / Migration
-      const { state, status, justMigrated } = migrateData(uid);
-      if (state) {
-        applyState(state);
-        setMigrationStatus(status);
-        if (uid) setWorkspaceMode('cloud'); // It will sync to cloud now
-      } else if (workspaceMode === 'demo') {
-        // Fallback to Demo Data
-        setHoldings(INITIAL_HOLDINGS);
-        setPortfolioValue(485290.00);
-        setDcaPlan(INITIAL_DCA_PLAN);
-        setDividendPlan(INITIAL_DIVIDEND_PLAN);
-        setDailyBrief(INITIAL_DAILY_BRIEF);
-        setActivities(INITIAL_ACTIVITIES);
-        setWatchlist(INITIAL_WATCHLIST);
-        setLabsSuggestions(INITIAL_LABS_SUGGESTIONS);
-      } else {
-        // New User / Empty State
-        setHoldings([]);
-        setPortfolioValue(0);
-        setActivities([]);
-        setWatchlist([]);
-        setSnapshots([]);
-      }
-
-      if (justMigrated) {
-        pushNotification({
-          type: 'success',
-          typeLabel: 'MIGRATION SUCCESS',
-          title: 'Legacy Aequitas workspace restored.',
-          description: 'Existing Aequitas data migrated into the new OS shell.'
-        });
-      }
-
-      setIsHydrating(false);
-    };
-
-    hydrate();
-  }, [user, workspaceMode]);
-
-  const applyState = (state: any) => {
-    if (state.holdings) setHoldings(state.holdings || []);
-    if (state.portfolioValue) setPortfolioValue(state.portfolioValue || 0);
-    if (state.dcaPlan) setDcaPlan(state.dcaPlan || INITIAL_DCA_PLAN);
-    if (state.dividendPlan) setDividendPlan(state.dividendPlan || INITIAL_DIVIDEND_PLAN);
-    if (state.activities) setActivities(state.activities || []);
-    if (state.thaiFundNavs) setThaiFundNavs(state.thaiFundNavs || INITIAL_THAI_FUND_NAVS);
-    if (state.watchlist) setWatchlist(state.watchlist || []);
-    if (state.snapshots) setSnapshots(state.snapshots || []);
-    if (state.latestAiImportPlan) setLatestAiImportPlan(state.latestAiImportPlan || null);
-    if (state.financialSettings) setFinancialSettings(state.financialSettings || {
-      baseCurrency: 'USD',
-      usdThbRate: 36.45,
-      showThbTotals: true,
-      preferThaiNav: true,
-      finnhubKey: ''
-    });
-  };
-
-  // Utility to detect if current state is demo data
-  const isDemoData = useCallback(() => {
-    if (holdings.length !== INITIAL_HOLDINGS.length) return false;
-    // Check if tickers match INITIAL_HOLDINGS
-    const demoTickers = INITIAL_HOLDINGS.map(h => h.ticker).sort();
-    const currentTickers = holdings.map(h => h.ticker).sort();
-    return demoTickers.every((t, i) => t === currentTickers[i]);
-  }, [holdings]);
-
-  // 2. Persistent Storage Sync
-  useEffect(() => {
-    if (isHydrating) return;
-
-    // Guard: Do not save demo data to the cloud automatically
-    if (user?.uid && workspaceMode === 'cloud' && isDemoData()) {
-      console.warn("[Aequitas OS] Save deferred: Workspace appears to contain demo data. Waiting for real data import.");
-      return;
-    }
-
-    saveState({
-      holdings,
-      portfolioValue,
-      dcaPlan,
-      dividendPlan,
-      activities,
-      thaiFundNavs,
-      watchlist,
-      snapshots,
-      latestAiImportPlan,
-      financialSettings,
-      migrationStatus: migrationStatus || undefined
-    }, user?.uid);
-  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, snapshots, latestAiImportPlan, financialSettings, migrationStatus, user, isHydrating, isDemoData, workspaceMode]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -497,24 +355,6 @@ export default function App() {
   };
 
   return (
-    <AuthGate onDemoMode={() => setWorkspaceMode('demo')}>
-      {(authUser) => {
-        // Sync auth user to state if not already set
-        if (!user && authUser) setUser(authUser);
-        if (workspaceMode === 'demo' && authUser) setWorkspaceMode('cloud');
-
-        if (isHydrating) {
-          return (
-            <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] dark:bg-[#0F172A]">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-500 dark:text-slate-400 font-medium">Hydrating Workspace Context...</p>
-              </div>
-            </div>
-          );
-        }
-
-        return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-[#F1F5F9] font-sans transition-colors duration-300 dot-grid">
       
       {/* 1. Left side Persistent Sidebar */}
@@ -526,7 +366,6 @@ export default function App() {
         onOpenSupport={() => setSupportModalOpen(true)}
         onTriggerAlert={pushNotification}
         portfolioValue={portfolioValue}
-        financialSettings={financialSettings}
       />
 
       {/* 2. Top Navigation header */}
@@ -539,49 +378,6 @@ export default function App() {
         toggleDarkMode={() => setDarkMode(!darkMode)}
         onClearNotification={handleClearNotif}
         onClearAllNotifications={handleClearAllNotifs}
-        migrationStatus={migrationStatus}
-        user={user}
-        workspaceMode={workspaceMode}
-        isDemoData={isDemoData()}
-        onSaveToCloud={async () => {
-          if (!user) return;
-          await saveStateToFirestore(user.uid, {
-            holdings,
-            portfolioValue,
-            dcaPlan,
-            dividendPlan,
-            activities,
-            thaiFundNavs,
-            watchlist,
-            snapshots,
-            latestAiImportPlan,
-            financialSettings,
-            migrationStatus: migrationStatus || undefined
-          });
-          pushNotification({
-            type: 'success',
-            typeLabel: 'CLOUD SYNC',
-            title: 'Workspace Saved',
-            description: 'Manual sync to cloud completed successfully.'
-          });
-        }}
-        onLoadFromCloud={async () => {
-          if (!user) return;
-          if (window.confirm("Reload state from cloud? Current local changes may be overwritten.")) {
-            setIsHydrating(true);
-            const cloudState = await fetchStateFromFirestore(user.uid);
-            if (cloudState) {
-              applyState(cloudState);
-              pushNotification({
-                type: 'success',
-                typeLabel: 'CLOUD SYNC',
-                title: 'Workspace Reloaded',
-                description: 'Latest state fetched from cloud successfully.'
-              });
-            }
-            setIsHydrating(false);
-          }
-        }}
       />
 
       {/* 3. Main content body wrapper */}
@@ -593,13 +389,11 @@ export default function App() {
               portfolioValue={portfolioValue} 
               setActiveTab={setActiveTab}
               healthScore={latestAiImportPlan?.portfolioSummary?.portfolioHealth ?? 94.8}
-              driftPct={calculatePortfolioDrift(holdings)}
+              driftPct={latestAiImportPlan?.portfolioSummary?.allocationDriftPct ?? 3.2}
               dailyBrief={dailyBrief}
               dcaTarget={dcaPlan.monthlyContributionPlan}
-              cashAvailable={dcaPlan.cashAvailable}
+              cashAvailable={dcaPlan.items.find(x => x.ticker === 'CASH')?.targetAmount ?? 8690}
               dividendMonthly={dividendPlan.expectedMonthlyDividend}
-              holdings={holdings}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -607,8 +401,6 @@ export default function App() {
             <DailyBriefTab 
               portfolioValue={portfolioValue}
               dailyBrief={dailyBrief}
-              holdings={holdings}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -618,7 +410,6 @@ export default function App() {
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               holdings={holdings}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -630,7 +421,6 @@ export default function App() {
               onUpdateHoldings={setHoldings}
               thaiFundNavs={thaiFundNavs}
               onUpdateThaiFundNavs={setThaiFundNavs}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -639,7 +429,6 @@ export default function App() {
               onTriggerAlert={pushNotification}
               holdings={holdings}
               latestAiImportPlan={latestAiImportPlan}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -648,7 +437,6 @@ export default function App() {
               dividendPlan={dividendPlan}
               onUpdateDividendPlan={setDividendPlan}
               holdings={holdings}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -658,7 +446,6 @@ export default function App() {
               onUpdateDcaPlan={setDcaPlan}
               holdings={holdings}
               onTriggerAlert={pushNotification}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -684,9 +471,6 @@ export default function App() {
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               holdings={holdings}
-              snapshots={snapshots}
-              onUpdateSnapshots={setSnapshots}
-              financialSettings={financialSettings}
             />
           )}
 
@@ -711,97 +495,11 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'watchlist' && (
-            <WatchlistTab
-              watchlist={watchlist}
-              onUpdateWatchlist={setWatchlist}
-              onTriggerAlert={pushNotification}
-            />
-          )}
-
           {activeTab === 'settings' && (
             <SettingsTab 
               portfolioValue={portfolioValue}
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
-              migrationStatus={migrationStatus}
-              financialSettings={financialSettings}
-              onUpdateFinancialSettings={setFinancialSettings}
-              workspaceMode={workspaceMode}
-              onImportLegacyToCloud={() => {
-                const { state, status } = migrateData(); // Migrate from global storage
-                if (state) {
-                  applyState(state);
-                  setMigrationStatus(status);
-                  pushNotification({
-                    type: 'success',
-                    typeLabel: 'CLOUD IMPORT',
-                    title: 'Legacy Data Bound to Cloud',
-                    description: 'Legacy localStorage has been imported and bound to your authenticated workspace.'
-                  });
-                }
-              }}
-              onDiscoverCloudData={async () => {
-                if (!user) return;
-                setIsHydrating(true);
-                const cloudState = await fetchStateFromFirestore(user.uid);
-                if (cloudState) {
-                  applyState(cloudState);
-                  pushNotification({
-                    type: 'success',
-                    typeLabel: 'CLOUD DISCOVERY',
-                    title: 'Cloud State Found',
-                    description: `Successfully restored portfolio from cloud workspace. Detected ${cloudState.holdings?.length || 0} holdings.`
-                  });
-                } else {
-                  pushNotification({
-                    type: 'advisory',
-                    typeLabel: 'CLOUD DISCOVERY',
-                    title: 'No State Found',
-                    description: 'Cloud discovery completed. No existing non-empty portfolios were found across known paths.'
-                  });
-                }
-                setIsHydrating(false);
-              }}
-              onRecoverFromBackup={() => {
-                const recovered = getCanonicalBackupState();
-
-                // 1. Create Golden Recovery Snapshot
-                const goldenSnapshot: Snapshot = {
-                  id: `snap-golden-${Date.now()}`,
-                  name: 'Golden Recovery Snapshot',
-                  timestamp: new Date().toISOString(),
-                  totalValue: recovered.portfolioValue || 0,
-                  holdingsCount: recovered.holdings?.length || 0,
-                  allocationBuckets: [], // Simplified for now
-                  rawStateJson: JSON.stringify(recovered)
-                };
-
-                const nextSnapshots = [goldenSnapshot, ...snapshots];
-
-                // 2. Apply state
-                applyState({
-                  ...recovered,
-                  snapshots: nextSnapshots,
-                  migrationStatus: {
-                    source: 'new-state',
-                    migratedAt: new Date().toISOString(),
-                    warnings: ['Restored from canonical backup']
-                  }
-                });
-
-                // 3. Disable Demo Mode if active
-                if (workspaceMode === 'demo') {
-                  setWorkspaceMode('cloud');
-                }
-
-                pushNotification({
-                  type: 'success',
-                  typeLabel: 'SYSTEM RECOVERED',
-                  title: 'Canonical Backup Restored',
-                  description: 'Workspace has been successfully recovered. Golden Snapshot created.'
-                });
-              }}
             />
           )}
 
@@ -871,8 +569,5 @@ export default function App() {
       )}
 
     </div>
-        );
-      }}
-    </AuthGate>
   );
 }
