@@ -1,21 +1,27 @@
 import { useState } from 'react';
 import { Calendar, Layers, Clock, Plus, ArrowUpRight, CheckCircle2, ChevronRight, Play } from 'lucide-react';
+import { DcaPlan, Holding } from '../types';
 
-export default function DcaPlanTab() {
-  const [activeFrequency, setActiveFrequency] = useState<'Daily' | 'Weekly' | 'Monthly'>('Weekly');
-  const [totalContribution, setTotalContribution] = useState<number>(300);
+interface DcaPlanTabProps {
+  dcaPlan: DcaPlan;
+  holdings: Holding[];
+  onUpdateDcaPlan: (plan: DcaPlan) => void;
+  onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
+}
 
-  const dcaAssets = [
-    { name: 'Solana Stable Yields', ticker: 'SOL', percentage: 48, assetClass: 'Layer-1 Infrastructure', state: 'Active' },
-    { name: 'Bitcoin Digital Gold', ticker: 'BTC', percentage: 32, assetClass: 'Store of Value', state: 'Active' },
-    { name: 'Ethereum Consensus Core', ticker: 'ETH', percentage: 20, assetClass: 'Smart Contracts Platform', state: 'Active' },
-  ];
+export default function DcaPlanTab({ dcaPlan, holdings, onUpdateDcaPlan, onTriggerAlert }: DcaPlanTabProps) {
+  const [activeFrequency, setActiveFrequency] = useState<'Daily' | 'Weekly' | 'Monthly'>('Monthly');
+
+  const handleUpdateContribution = (val: number) => {
+    onUpdateDcaPlan({
+      ...dcaPlan,
+      monthlyContributionPlan: val
+    });
+  };
 
   const historicalContributions = [
-    { date: 'May 20, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
-    { date: 'May 13, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
-    { date: 'May 06, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
-    { date: 'Apr 29, 2026', total: 300.00, breakdown: 'SOL: $144 | BTC: $96 | ETH: $60', status: 'COMPLETED' },
+    { date: 'May 20, 2026', total: dcaPlan.monthlyContributionPlan, breakdown: dcaPlan.items.slice(0, 3).map(i => `${i.ticker}: $${(i.targetAmount).toLocaleString()}`).join(' | '), status: 'COMPLETED' },
+    { date: 'May 13, 2026', total: dcaPlan.monthlyContributionPlan, breakdown: dcaPlan.items.slice(0, 3).map(i => `${i.ticker}: $${(i.targetAmount).toLocaleString()}`).join(' | '), status: 'COMPLETED' },
   ];
 
   return (
@@ -39,11 +45,11 @@ export default function DcaPlanTab() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Planner Settings (8 Columns) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
           <div>
             <div className="flex justify-between items-start pb-4 border-b border-slate-100 dark:border-slate-800/45 mb-6">
               <div>
-                <span className="text-[10px] uppercase font-black tracking-wider text-slate-450">ACCUMULATION CONTROLLER</span>
+                <span className="text-[10px] uppercase font-black tracking-wider text-slate-455">ACCUMULATION CONTROLLER</span>
                 <h3 className="text-lg font-bold tracking-tight mt-1 text-slate-900 dark:text-white">Active DCA Settings</h3>
               </div>
               <div className="flex bg-slate-100 dark:bg-slate-900/40 p-1 rounded-xl">
@@ -67,16 +73,16 @@ export default function DcaPlanTab() {
             <div className="space-y-6">
               <div className="space-y-1.5 text-xs font-bold text-slate-655 shrink-0">
                 <div className="flex justify-between items-baseline">
-                  <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Recurring Amount (USD)</label>
-                  <span className="font-mono text-blue-600 font-bold">${totalContribution} / period</span>
+                  <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Recurring Monthly Contribution (USD)</label>
+                  <span className="font-mono text-blue-600 font-bold">${dcaPlan.monthlyContributionPlan.toLocaleString()} / mo</span>
                 </div>
                 <input 
                   type="range"
-                  min="50"
-                  max="1000"
-                  step="25"
-                  value={totalContribution}
-                  onChange={(e) => setTotalContribution(parseInt(e.target.value))}
+                  min="500"
+                  max="20000"
+                  step="500"
+                  value={dcaPlan.monthlyContributionPlan}
+                  onChange={(e) => handleUpdateContribution(parseInt(e.target.value))}
                   className="accent-blue-600 h-1.5 w-full bg-slate-200 rounded-lg cursor-pointer"
                 />
               </div>
@@ -84,23 +90,23 @@ export default function DcaPlanTab() {
               {/* Weight split feedback */}
               <div className="space-y-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Core Splitting Ledger</span>
-                <div className="space-y-2.5">
-                  {dcaAssets.map((asset) => {
-                    const allocationValue = (totalContribution * asset.percentage) / 100;
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {dcaPlan.items.map((item) => {
+                    const percentage = ((item.targetAmount / dcaPlan.monthlyContributionPlan) * 100).toFixed(1);
                     return (
-                      <div key={asset.ticker} className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-905/30 border border-slate-100 dark:border-slate-805/5 rounded-xl text-xs font-sans">
+                      <div key={item.id} className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-905/30 border border-slate-100 dark:border-slate-805/5 rounded-xl text-xs font-sans">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-blue-100/40 dark:bg-slate-800 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold tracking-wider">
-                            {asset.ticker}
+                            {item.ticker.slice(0, 3)}
                           </div>
                           <div>
-                            <span className="font-bold text-slate-800 dark:text-slate-200">{asset.name}</span>
-                            <span className="text-[10px] text-slate-400 block">{asset.assetClass}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{item.ticker}</span>
+                            <span className="text-[10px] text-slate-400 block">{item.interval} Deployment</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="font-mono font-bold text-slate-900 dark:text-white">${allocationValue.toFixed(2)}</span>
-                          <span className="text-[10px] text-slate-400 block font-mono">({asset.percentage}%)</span>
+                          <span className="font-mono font-bold text-slate-900 dark:text-white">${item.targetAmount.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400 block font-mono">({percentage}%)</span>
                         </div>
                       </div>
                     );
@@ -111,31 +117,31 @@ export default function DcaPlanTab() {
           </div>
 
           <div className="mt-8 pt-5 border-t border-slate-100 dark:border-slate-805/10 flex justify-between items-center bg-transparent">
-            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">DCA Node Trigger: sol-09</span>
+            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider">DCA STATUS: {dcaPlan.items.every(i => i.status === 'Completed') ? 'OPTIMIZED' : 'PENDING EXECUTION'}</span>
             <button className="flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
-              <span>View schedules</span>
+              <span>View full schedules</span>
               <ChevronRight size={14} />
             </button>
           </div>
         </div>
 
         {/* DCA Information Sidebar (4 Columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
           <div className="space-y-6">
             <div>
               <span className="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400">
                 PLAN SUMMARY
               </span>
               <h3 className="text-base font-bold mt-1 text-slate-900 dark:text-white">Execution Status</h3>
-              <p className="text-xs text-slate-450 mt-1">DCA status tracker.</p>
+              <p className="text-xs text-slate-455 mt-1">Next capital deployment tracking.</p>
             </div>
 
             <div className="space-y-4">
               <div className="p-3 bg-slate-100/50 dark:bg-slate-900/35 rounded-xl space-y-1">
                 <span className="text-[9px] uppercase font-black text-slate-400 block tracking-widest">Next Scheduled Run</span>
-                <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">June 2, 2026</span>
-                <p className="text-[10px] text-slate-400 leading-normal mt-1">
-                  Automatic withdrawal initiated at 00:00 UTC.
+                <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">{dcaPlan.nextContributionReminder}</span>
+                <p className="text-[10px] text-slate-455 leading-normal mt-1">
+                  Manual validation required for multi-asset execution.
                 </p>
               </div>
 
@@ -144,7 +150,7 @@ export default function DcaPlanTab() {
                 <div>
                   <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-400">Ledger Compliance Pass</h4>
                   <p className="text-[10px] text-emerald-700 dark:text-emerald-500 leading-normal mt-0.5">
-                    Funding accounts are pre-authorized with zero margin deficits.
+                    Funding accounts verified at <strong className="text-emerald-600">${dcaPlan.cashAvailable.toLocaleString()}</strong> cash available.
                   </p>
                 </div>
               </div>
@@ -155,9 +161,9 @@ export default function DcaPlanTab() {
       </div>
 
       {/* Historical logs Section */}
-      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25">
+      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white">
         <div className="p-5 border-b border-slate-100 dark:border-slate-800/10 bg-slate-500/5">
-          <span className="text-xs font-bold uppercase tracking-widest text-slate-550">Historical Accumulations</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-455">Historical Accumulations</span>
         </div>
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[600px]">
@@ -173,8 +179,8 @@ export default function DcaPlanTab() {
               {historicalContributions.map((log, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                   <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{log.date}</td>
-                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${log.total.toFixed(2)}</td>
-                  <td className="px-6 py-4 text-slate-500 font-mono italic">{log.breakdown}</td>
+                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${log.total.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-slate-500 font-mono italic truncate max-w-xs">{log.breakdown}</td>
                   <td className="px-6 py-4 text-right">
                     <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/25 px-2.5 py-1 rounded-full border border-emerald-100/40">
                       RESOLVED

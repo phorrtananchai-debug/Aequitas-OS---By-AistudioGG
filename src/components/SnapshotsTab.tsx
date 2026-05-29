@@ -10,6 +10,8 @@ import {
   Clock,
   Sparkles
 } from 'lucide-react';
+import { Holding } from '../types';
+import { calculatePortfolioDrift } from '../core/utils';
 
 interface SnapshotItem {
   id: string;
@@ -24,7 +26,7 @@ interface SnapshotsTabProps {
   portfolioValue: number;
   onUpdatePortfolio: (val: number) => void;
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
-  holdings?: any[];
+  holdings: Holding[];
 }
 
 export default function SnapshotsTab({
@@ -33,26 +35,10 @@ export default function SnapshotsTab({
   onTriggerAlert,
   holdings
 }: SnapshotsTabProps) {
-  const [snapshots, setSnapshots] = useState<SnapshotItem[]>([
-    {
-      id: 'snap-1',
-      name: 'Main Ledger Archive - April 2026 Sync',
-      timestamp: '2026-04-12T14:32:00Z',
-      value: 462000,
-      node: 'Primary Ledger',
-      drift: '3.1%'
-    },
-    {
-      id: 'snap-2',
-      name: 'Q1 Rebalance Baseline',
-      timestamp: '2026-01-05T09:15:00Z',
-      value: 415300,
-      node: 'Primary Ledger',
-      drift: '2.8%'
-    }
-  ]);
-
+  const [snapshots, setSnapshots] = useState<SnapshotItem[]>([]);
   const [newSnapshotName, setNewSnapshotName] = useState('');
+
+  const drift = calculatePortfolioDrift(holdings);
 
   const handleCreateSnapshot = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +50,7 @@ export default function SnapshotsTab({
       timestamp: new Date().toISOString(),
       value: portfolioValue,
       node: 'Primary Ledger',
-      drift: '3.2%'
+      drift: `${drift}%`
     };
 
     setSnapshots([newSnap, ...snapshots]);
@@ -143,7 +129,7 @@ export default function SnapshotsTab({
         </div>
 
         {/* Local Backup Action block */}
-        <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-205/60 dark:border-slate-800/25 flex flex-col justify-between">
+        <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-205/60 dark:border-slate-800/25 flex flex-col justify-between bg-white">
           <div>
             <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Backup Configuration</span>
             <span className="text-xs text-slate-550 leading-normal block">Save an offline backup record bundle.</span>
@@ -162,7 +148,7 @@ export default function SnapshotsTab({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* New Snapshot formulation (4 Columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
           <form onSubmit={handleCreateSnapshot} className="space-y-6">
             <div className="pb-4 border-b border-slate-100 dark:border-slate-800/25">
               <span className="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400 block">
@@ -181,14 +167,14 @@ export default function SnapshotsTab({
                   value={newSnapshotName}
                   onChange={(e) => setNewSnapshotName(e.target.value)}
                   placeholder="e.g. May Post-DCA Rebalance"
-                  className="w-full bg-slate-100/100 border border-slate-200 dark:bg-slate-900/60 dark:border-slate-800 text-slate-950 dark:text-slate-50 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-600/50"
+                  className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-900/60 dark:border-slate-800 text-slate-950 dark:text-slate-50 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-blue-600/50"
                 />
               </div>
 
               <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-[10px] text-slate-500 leading-normal font-medium space-y-1.5 border border-slate-100 dark:border-slate-900/10">
                 <div className="flex justify-between">
                   <span>Included Assets:</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-350">SOL, BTC, ETH</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-350">{holdings.length} Positions</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Balance Record:</span>
@@ -208,7 +194,7 @@ export default function SnapshotsTab({
         </div>
 
         {/* Snapshot Ledger List (8 Columns) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 bg-white">
           <div className="pb-4 border-b border-slate-100 dark:border-slate-800/45 mb-6">
             <span className="text-[10px] uppercase font-black tracking-wider text-slate-450">CHRONO-REGISTRY</span>
             <h3 className="text-lg font-bold tracking-tight mt-1 text-slate-900 dark:text-white">Saved State Records</h3>

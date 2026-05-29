@@ -13,6 +13,7 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 import { Holding, DcaPlan, DividendPlan, ThaiFundNavState, AiImportSchema, AlertItem, TabType, LabsSuggestion } from '../types';
+import { calculatePortfolioDrift, calculatePortfolioHealth } from '../core/utils';
 
 interface AIWorkflowTabProps {
   portfolioValue: number;
@@ -46,6 +47,9 @@ export default function AIWorkflowTab({
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
 
+  const drift = calculatePortfolioDrift(holdings);
+  const health = calculatePortfolioHealth(holdings);
+
   // Generate the actual live state JSON to copy!
   const activeContext = JSON.stringify({
     system: "Aequitas Investment Operating System",
@@ -53,8 +57,8 @@ export default function AIWorkflowTab({
     operating_mode: "Offline Cache",
     summary_metrics: {
       total_portfolio_value: portfolioValue,
-      drift_marker_pct: "3.2%",
-      health_score_pct: 94.8,
+      drift_marker_pct: `${drift}%`,
+      health_score_pct: health,
       currency: "USD"
     },
     live_holdings: (holdings || []).map(h => ({

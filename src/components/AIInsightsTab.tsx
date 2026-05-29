@@ -9,11 +9,12 @@ import {
   AlertCircle 
 } from 'lucide-react';
 import { ChatMessage, AlertItem, Holding, DailyBrief } from '../types';
+import { calculatePortfolioDrift, calculateDividendStats, calculateLayerStats } from '../core/utils';
 
 interface AIInsightsProps {
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
-  holdings?: Holding[];
-  dailyBrief?: DailyBrief;
+  holdings: Holding[];
+  dailyBrief: DailyBrief;
   aiImportStatus?: string | null;
 }
 
@@ -35,6 +36,10 @@ export default function AIInsightsTab({ onTriggerAlert, holdings, dailyBrief, ai
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
+
+  const drift = calculatePortfolioDrift(holdings);
+  const divStats = calculateDividendStats(holdings);
+  const layerStats = calculateLayerStats(holdings);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -62,34 +67,37 @@ export default function AIInsightsTab({ onTriggerAlert, holdings, dailyBrief, ai
 
       // Semantic keyword routing templates
       if (promptLower.includes('tax') || promptLower.includes('thai') || promptLower.includes('rmf')) {
-        aiResponseText = `### Kasikorn S&P 550 RMF Tax-Wrapper Audit
+        aiResponseText = `### Kasikorn S&P 500 RMF Tax-Wrapper Audit
 
 Reconciling Thai Retirement Mutual Funds (RMF) and Super Savings Funds (SSF) under local law:
 1. **Tax Savings Bounds**: Investments reduce active personal taxable income up to **30%** of gross income (standard caps apply up to **500,000 THB** package limits).
 2. **Holding Compliance**: RMF requires continuous annual holding blocks until age **55** and at least 5 full years of contributions. Withdrawal before this triggers retroactive tax penalty claims.
 3. **Optimized Target Selection**: Directing your monthly DCA allocations to Thai S&P 500 RMF indexes provides double compounding—capturing US equity growth while locking in **20%-35%** risk-free tax savings on input.`;
       } else if (promptLower.includes('drift') || promptLower.includes('growth') || promptLower.includes('etf')) {
+        const growthLayer = layerStats.layers.find(l => l.name === 'Growth Layer');
+        const coreLayer = layerStats.layers.find(l => l.name === 'Core ETF Layer');
+
         aiResponseText = `### Portfolio Drift & Volatility Vector Audit
 
 Evaluating target weight boundaries across your structural portfolios:
-* **Growth Equities (MSFT, NVDA, GOOGL etc.)**: Currently at **44.3%** vs a target range cap of **40%**. Shows positive momentum but indicates a minor drift breach of **+4.3%**.
-* **Core S&P 500 ETF (VOO, SCHD)**: Currently at **31.7%** vs a target of **35%**. Consists of deep stable collateral.
-* **Calm Rebalancing Suggestion**: Under the Aequitas philosophy, we do NOT execute sudden liquidations. Redirect the next 3 consecutive **Monthly DCA contributions** exclusively to target S&P 500 and Cash Buffer positions ($3,500 target DCA bounds) to naturally compress growth-weight drifts without tax costs.`;
+* **Growth Equities**: Currently at **${growthLayer?.pct}%** vs a target range cap of **${growthLayer?.target}%**.
+* **Core S&P 500 ETF**: Currently at **${coreLayer?.pct}%** vs a target of **${coreLayer?.target}%**.
+* **Calm Rebalancing Suggestion**: Under the Aequitas philosophy, we do NOT execute sudden liquidations. Redirect the next consecutive **Monthly DCA contributions** to underweight layers to naturally compress drifts without tax costs. Total weighted drift is currently **${drift}%**.`;
       } else if (promptLower.includes('dividend') || promptLower.includes('passive') || promptLower.includes('compound')) {
         aiResponseText = `### Passive Dividend Stream & Liquidity Compound Engine
 
-Analyzing yield metrics from passive income holdings (JEPQ, SCHD, ABBV, etc.):
-* **Current Yield Runrate**: Monthly average cash flows are configured at **$1,650.00** ($19,800.00 annualized).
+Analyzing yield metrics from passive income holdings:
+* **Current Yield Runrate**: Monthly average cash flows are configured at **$${divStats.monthlyEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}** ($${divStats.annualEst.toLocaleString(undefined, { maximumFractionDigits: 0 })} annualized).
 * **Compounding Schedule**: Income distributions are held in cash buffer layers automatically. 
-* **Optimized Contribution Rules**: Allocating these dividends directly to your Standard ETF DCA plans (e.g. VOO) rather than spot withdrawals amplifies share accumulation curves by an estimated **+1.85%** annualized compounding spread.`;
+* **Optimized Contribution Rules**: Allocating these dividends directly to your Standard ETF DCA plans (e.g. VOO) rather than spot withdrawals amplifies share accumulation curves. Current weighted APY is **${divStats.weightedApy}%**.`;
       } else {
         aiResponseText = `### Strategic Planning Synthesis
 
 Evaluating query: *&quot;${textToSend}&quot;*
 
 Based on live local parameters:
-1. All portfolio drift indices are safely within standard risk-tolerance limits (current drift marker stable at **3.2%**).
-2. Passive expected stock dividends indicate steady coverage margins of **10.5x**.
+1. All portfolio drift indices are safely within standard risk-tolerance limits (current drift marker stable at **${drift}%**).
+2. Passive expected stock dividends indicate steady coverage margins.
 3. Thai fund wrappers comply perfectly with active local tax brackets.
 
 *Suggestions: Ask about Thai RMF / SSF tax rules, rebalancing drift schedules, or dividend reinvestment triggers for specialized models.*`;

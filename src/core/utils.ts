@@ -1,11 +1,11 @@
 import { Holding } from '../types';
 
 export const ASSET_LAYERS = [
-  { name: 'Core ETF Layer', types: ['US ETF', 'Thai Mutual Fund'], target: 35 },
-  { name: 'Growth Layer', types: ['US Stock'], target: 35 },
-  { name: 'Dividend / Behavior Layer', types: ['Dividend ETF'], target: 15 },
-  { name: 'Thai Tax Wrapper Layer', types: ['Thai RMF'], target: 12 },
-  { name: 'Sandbox Layer', types: ['Sandbox Asset'], target: 3 },
+  { name: 'Core ETF Layer', types: ['US ETF', 'Thai Mutual Fund'], target: 35, color: 'bg-blue-600', text: 'text-blue-650' },
+  { name: 'Growth Layer', types: ['US Stock'], target: 35, color: 'bg-indigo-600', text: 'text-indigo-600' },
+  { name: 'Dividend / Behavior Layer', types: ['Dividend ETF'], target: 15, color: 'bg-emerald-600', text: 'text-emerald-600' },
+  { name: 'Thai Tax Wrapper Layer', types: ['Thai RMF'], target: 12, color: 'bg-amber-600', text: 'text-amber-600' },
+  { name: 'Sandbox Layer', types: ['Sandbox Asset'], target: 3, color: 'bg-purple-600', text: 'text-purple-600' },
 ];
 
 export const getLayerValue = (layerName: string, holdings: Holding[]): number => {
@@ -27,11 +27,11 @@ export const calculateLayerStats = (holdings: Holding[]) => {
 
   return {
     totalValue,
-    core: { value: getLayerValue('Core ETF Layer', holdings), pct: getSafePct(getLayerValue('Core ETF Layer', holdings)) },
-    growth: { value: getLayerValue('Growth Layer', holdings), pct: getSafePct(getLayerValue('Growth Layer', holdings)) },
-    dividend: { value: getLayerValue('Dividend / Behavior Layer', holdings), pct: getSafePct(getLayerValue('Dividend / Behavior Layer', holdings)) },
-    tax: { value: getLayerValue('Thai Tax Wrapper Layer', holdings), pct: getSafePct(getLayerValue('Thai Tax Wrapper Layer', holdings)) },
-    sandbox: { value: getLayerValue('Sandbox Layer', holdings), pct: getSafePct(getLayerValue('Sandbox Layer', holdings)) },
+    layers: ASSET_LAYERS.map(l => ({
+      ...l,
+      value: getLayerValue(l.name, holdings),
+      pct: getSafePct(getLayerValue(l.name, holdings))
+    }))
   };
 };
 
@@ -49,4 +49,29 @@ export const calculatePortfolioDrift = (holdings: Holding[]) => {
   });
 
   return Number.isFinite(totalWeightedDrift) ? parseFloat(totalWeightedDrift.toFixed(1)) : 0;
+};
+
+export const calculatePortfolioHealth = (holdings: Holding[]) => {
+  const drift = calculatePortfolioDrift(holdings);
+  // Health starts at 100%, and drops as drift increases.
+  // A 10% weighted drift is quite high, so we scale it.
+  const health = 100 - (drift * 2);
+  return Math.max(0, Math.min(100, parseFloat(health.toFixed(1))));
+};
+
+export const calculateDividendStats = (holdings: Holding[]) => {
+  const annualEst = (holdings || []).reduce((acc, h) => acc + ((h.value || 0) * (h.dividendYield || 0) / 100), 0);
+  const monthlyEst = annualEst / 12;
+  const totalValue = (holdings || []).reduce((acc, h) => acc + (h.value || 0), 0);
+  const weightedApy = totalValue > 0 ? (annualEst / totalValue) * 100 : 0;
+
+  return {
+    annualEst,
+    monthlyEst,
+    weightedApy: Number.isFinite(weightedApy) ? parseFloat(weightedApy.toFixed(2)) : 0
+  };
+};
+
+export const formatCurrency = (value: number) => {
+  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
