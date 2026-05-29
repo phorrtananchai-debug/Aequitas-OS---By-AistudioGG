@@ -1,202 +1,128 @@
-import { useState } from 'react';
+import React from 'react';
 import { 
-  History, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  CheckCircle, 
-  Clock, 
-  AlertOctagon,
+  Plus,
+  Trash2,
   Search,
-  Download,
-  CheckCircle2,
-  Calendar,
-  Layers,
-  FileJson
+  Filter,
+  ArrowUpRight,
+  Clock
 } from 'lucide-react';
 import { ActivityItem, AlertItem } from '../types';
+import { safeToLocaleString } from '../core/utils';
 
-interface ActivityProps {
+interface ActivityTabProps {
   activities: ActivityItem[];
   searchQuery: string;
   onClearActivities: () => void;
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
 }
 
-export default function ActivityTab({
-  activities,
-  searchQuery,
-  onClearActivities,
-  onTriggerAlert
-}: ActivityProps) {
-  const [filterType, setFilterType] = useState<string>('all');
+export default function ActivityTab({ activities, searchQuery, onClearActivities, onTriggerAlert }: ActivityTabProps) {
 
-  const filteredActivities = activities.filter(act => {
-    const matchesSearch = 
-      (act.notes || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      act.asset.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      act.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      act.type.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (filterType === 'all') return matchesSearch;
-    return matchesSearch && act.type.toLowerCase() === filterType.toLowerCase();
+  const safeActivities = Array.isArray(activities) ? activities : [];
+
+  const filtered = safeActivities.filter(act => {
+    if (!act) return false;
+    const sQuery = (searchQuery || '').toLowerCase();
+    return (
+      (act.asset || '').toLowerCase().includes(sQuery) ||
+      (act.type || '').toLowerCase().includes(sQuery) ||
+      (act.notes || '').toLowerCase().includes(sQuery) ||
+      (act.status || '').toLowerCase().includes(sQuery)
+    );
   });
 
-  const triggerExportLogs = () => {
-    onTriggerAlert({
-      type: 'success',
-      typeLabel: 'LOGS EXPORTED',
-      title: 'Activity Ledger Exported',
-      description: 'Unified planning activities fully saved in structured JSON context. Compatible with AI model audits.'
-    });
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch(category.toLowerCase()) {
-      case 'hold':
-        return 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400';
-      case 'review':
-        return 'bg-purple-50 text-purple-600 dark:bg-purple-950/20 dark:text-purple-400';
-      case 'manual action':
-        return 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400';
-      case 'contribution':
-        return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400';
-      case 'reduce':
-        return 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400';
-      default:
-        return 'bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400';
+  const handleClear = () => {
+    if (window.confirm("Permanently purge all manual ledger activity history?")) {
+      onClearActivities();
+      onTriggerAlert({
+        type: 'advisory',
+        typeLabel: 'LEDGER PURGED',
+        title: 'Activity History Cleared',
+        description: 'All local activity records have been permanently removed from the ledger.'
+      });
     }
   };
 
-  const categories = ['all', 'Contribution', 'Review', 'Manual Action', 'Hold', 'Reduce'];
-
   return (
-    <div className="space-y-8 animate-fade-in text-slate-800 dark:text-slate-100 pb-12 font-sans">
+    <div className="space-y-8 animate-fade-in text-slate-800 dark:text-[#F4EEE4] pb-12 font-sans">
       
-      {/* Tab head */}
-      <section className="flex flex-col sm:flex-row justify-between sm:items-end gap-3">
+      {/* Introduction Greeting */}
+      <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <span className="text-[10px] font-black tracking-wider text-blue-600 dark:text-blue-400 uppercase">
-            Human-controlled Settle Audit Trail
+            Sovereign Transaction Log
           </span>
           <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
-            Activity Planning Audit
+            Manual Ledger Activity
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-            Audit logs tracking past DCA changes, local weight reconciliations, and imported AI structural guidance logs.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
+            Audit manual contributions, rebalance events, and status updates. This log is stored entirely in your local browser cache.
           </p>
         </div>
-        <div className="flex gap-3 shrink-0 self-end sm:self-auto font-sans">
-          {activities.length > 0 && (
-            <button
-              onClick={onClearActivities}
-              className="px-3.5 py-2 hover:bg-rose-500/10 hover:text-rose-600 border border-transparent hover:border-rose-200/40 rounded-xl text-xs font-bold text-slate-400 active:scale-98 transition-all"
-            >
-              Clear Audit Log
-            </button>
-          )}
-          <button
-            onClick={triggerExportLogs}
-            className="px-4 py-2 hover:border-blue-500 hover:text-blue-600 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-350 flex items-center gap-1.5 active:scale-98 transition-all"
-          >
-            <Download size={14} />
-            Export Audit
-          </button>
-        </div>
+
+        <button
+          onClick={handleClear}
+          className="flex items-center gap-2 px-4 py-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-all text-xs font-bold uppercase tracking-wider"
+        >
+          <Trash2 size={14} />
+          Purge History
+        </button>
       </section>
 
-      {/* Main body Table card */}
-      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white">
-        
-        {/* Filter triggers strip */}
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800/10 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-slate-50">
-          <div className="flex bg-slate-100/85 p-1 rounded-xl w-fit flex-wrap">
-            {categories.map((type) => (
-              <button
-                key={type}
-                onClick={() => setFilterType(type)}
-                className={`px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all ${
-                  filterType.toLowerCase() === type.toLowerCase()
-                    ? 'bg-white text-blue-600 shadow-sm font-bold' 
-                    : 'text-slate-400 hover:text-slate-650'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+      {/* Main Activity List */}
+      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800/10 flex justify-between items-center bg-slate-500/5">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-blue-600" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-550">Historical Registry</span>
           </div>
-          <span className="text-[11px] text-slate-450 font-mono font-bold">Audit records: {filteredActivities.length} Operations</span>
+          <div className="text-[10px] font-mono text-slate-400">
+            {filtered.length} Records found
+          </div>
         </div>
 
-        {/* Real trades database rows */}
         <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[650px]">
+          <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100 dark:border-slate-800/5">
-                <th className="px-6 py-4 text-[10px] tracking-widest font-black text-slate-400 uppercase">OPERATION ID</th>
-                <th className="px-6 py-4 text-[10px] tracking-widest font-black text-slate-400 uppercase">CATEGORY</th>
-                <th className="px-6 py-4 text-[10px] tracking-widest font-black text-slate-400 uppercase">OP DETAILS DESCRIPTION</th>
-                <th className="px-6 py-4 text-[10px] tracking-widest font-black text-slate-400 uppercase font-mono text-center">VALUE DELTA</th>
-                <th className="px-6 py-4 text-[10px] tracking-widest font-black text-slate-400 uppercase text-center">SYNC SOURCE</th>
-                <th className="px-6 py-4 text-[10px] tracking-widest font-black text-slate-400 uppercase">SETTLE DATE</th>
-                <th className="px-6 py-4 text-[10px] tracking-widest font-black text-slate-400 uppercase text-center">STATUS</th>
+              <tr className="bg-slate-500/5 border-b border-slate-100 text-[10px] tracking-widest font-black text-slate-400 uppercase">
+                <th className="px-6 py-4">TIMESTAMP</th>
+                <th className="px-6 py-4">TYPE</th>
+                <th className="px-6 py-4">ASSET</th>
+                <th className="px-6 py-4">AMOUNT</th>
+                <th className="px-6 py-4">NOTES / CONTEXT</th>
+                <th className="px-6 py-4 text-right">STATUS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/40 text-xs font-sans">
-              {filteredActivities.length === 0 ? (
+            <tbody className="divide-y divide-slate-100 font-sans text-xs">
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-xs text-slate-400">No operations entered yet in this workspace.</td>
+                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No activity records found matching active filter.</td>
                 </tr>
-              ) : (
-                filteredActivities.map((log) => {
-                  return (
-                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 text-xs font-mono font-bold text-slate-400 dark:text-slate-500 truncate max-w-[120px]">{log.id}</td>
-                      
-                      <td className="px-6 py-4">
-                        <span className={`text-[9px] uppercase font-bold px-2.5 py-1 rounded-full ${getCategoryColor(log.type)}`}>
-                          {log.type}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span className="font-semibold text-slate-800 dark:text-white">
-                          <span className="font-mono text-xs font-bold text-blue-600 mr-2">[{log.asset}]</span>
-                          {log.notes || 'No notes provided'}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4 text-center font-mono font-medium text-slate-900 dark:text-white">
-                        {log.amount !== undefined ? (
-                          log.amount === 0 ? (
-                            <span className="text-slate-400">Neutral</span>
-                          ) : (
-                            <span className="text-slate-950 dark:text-slate-50 font-bold">
-                              ${log.amount.toLocaleString()}
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </td>
-
-                      <td className="px-6 py-4 text-center font-semibold text-slate-500">
-                        {log.type === 'Review' ? 'AI AUDIT' : 'LOCAL WORKSPACE'}
-                      </td>
-
-                      <td className="px-6 py-4 font-mono text-slate-450 dark:text-slate-400 whitespace-nowrap">
-                        {log.timestamp}
-                      </td>
-
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase">
-                          <CheckCircle2 size={12} className="text-emerald-600 shrink-0" />
-                          RECONCILED
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+              ) : filtered.map((act) => (
+                <tr key={act.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4 font-mono text-slate-400">{act.timestamp}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      act.type === 'Contribution' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {act.type}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-slate-900">{act.asset}</td>
+                  <td className="px-6 py-4 font-mono font-bold text-slate-900">
+                    {act.amount ? `$${safeToLocaleString(act.amount)}` : '—'}
+                  </td>
+                  <td className="px-6 py-4 text-slate-500 italic max-w-xs truncate">
+                    {act.notes || 'No context provided.'}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100 bg-emerald-50 px-2 py-1 rounded-full">
+                      {act.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { Coins, TrendingUp, Calendar, Check, ArrowUpRight, Percent, Info } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Calendar,
+  Info
+} from 'lucide-react';
 import { DividendPlan, Holding } from '../types';
-import { calculateDividendStats } from '../core/utils';
+import { calculateDividendStats, safeToLocaleString, safeToFixed } from '../core/utils';
 
 interface DividendsTabProps {
   dividendPlan: DividendPlan;
@@ -9,18 +13,18 @@ interface DividendsTabProps {
   onUpdateDividendPlan: (plan: DividendPlan) => void;
 }
 
-export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendPlan }: DividendsTabProps) {
+export default function DividendsTab({ dividendPlan, holdings }: DividendsTabProps) {
   const [compoundYears, setCompoundYears] = useState<number>(5);
   const [monthlyContribution, setMonthlyContribution] = useState<number>(1500);
 
-  const stats = calculateDividendStats(holdings);
-  const portfolioValue = holdings.reduce((acc, h) => acc + (h.value || 0), 0);
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const stats = calculateDividendStats(safeHoldings);
+  const portfolioValue = safeHoldings.reduce((acc, h) => acc + (h?.value || 0), 0);
 
   // Calculate compound interest
-  // A = P(1 + r/n)^(nt) + PMT * (((1 + r/n)^(nt) - 1) / (r/n)) * (1 + r/n)
   const calculateEstimate = () => {
     const P = portfolioValue;
-    const r = stats.weightedApy / 100;
+    const r = (stats.weightedApy ?? 0) / 100;
     const n = 12; // compounding monthly
     const t = compoundYears;
     const PMT = monthlyContribution;
@@ -30,15 +34,16 @@ export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendP
     const baseAmount = P * Math.pow(1 + r/n, n * t);
     const annuityAmount = PMT * ((Math.pow(1 + r/n, n * t) - 1) / (r/n)) * (1 + r/n);
 
-    return Math.round(baseAmount + annuityAmount);
+    const res = baseAmount + annuityAmount;
+    return Number.isFinite(res) ? Math.round(res) : 0;
   };
 
-  const dividendEvents = (holdings || [])
-    .filter(h => h.dividendYield && h.dividendYield > 0)
+  const dividendEvents = safeHoldings
+    .filter(h => h && h.dividendYield && h.dividendYield > 0)
     .map(h => ({
       id: `DIV-${h.ticker}`,
       source: h.name,
-      amount: (h.value * (h.dividendYield || 0) / 100) / 4, // Simple quarterly est
+      amount: ((h.value || 0) * (h.dividendYield || 0) / 100) / 4, // Simple quarterly est
       frequency: 'Quarterly',
       estimateDate: 'Next Cycle',
       status: 'PENDING'
@@ -63,22 +68,22 @@ export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendP
       {/* Overview Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Monthly Yield Est.</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">${stats.monthlyEst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Monthly Yield Est.</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">${safeToLocaleString(stats.monthlyEst, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           <p className="text-[10px] text-emerald-600 font-bold uppercase mt-2 flex items-center gap-0.5">
             <ArrowUpRight size={10} /> Derived from live yields
           </p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Weighted System APY</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.weightedApy.toFixed(2)}%</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Weighted System APY</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{safeToFixed(stats.weightedApy, 2)}%</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Compounding active</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Annualized Income Est.</span>
-          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">${stats.annualEst.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Annualized Income Est.</span>
+          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">${safeToLocaleString(stats.annualEst, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 flex items-center gap-1">
             <Calendar size={10} /> Core projection
           </p>
@@ -86,7 +91,7 @@ export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendP
       </div>
 
       {/* Table section: Dividend Events */}
-      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white">
+      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
         <div className="p-5 border-b border-slate-100 dark:border-slate-800/10 flex justify-between items-center bg-slate-500/5">
           <span className="text-xs font-bold uppercase tracking-widest text-slate-550">Compounding Ledger Log</span>
           <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 scale-90">Auto Reinvest Active</span>
@@ -104,11 +109,15 @@ export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendP
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-850 font-sans text-xs">
-              {dividendEvents.map((event) => (
+              {dividendEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">No active dividend positions found.</td>
+                </tr>
+              ) : dividendEvents.map((event) => (
                 <tr key={event.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                   <td className="px-6 py-4 font-mono font-bold text-slate-400">{event.id}</td>
                   <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-200">{event.source}</td>
-                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${event.amount.toFixed(2)}</td>
+                  <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">${safeToFixed(event.amount, 2)}</td>
                   <td className="px-6 py-4 text-slate-500">{event.frequency}</td>
                   <td className="px-6 py-4 text-slate-500">{event.estimateDate}</td>
                   <td className="px-6 py-4 text-right">
@@ -129,10 +138,10 @@ export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendP
 
       {/* Yield compounding calculator (Bento block) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 flex flex-col justify-between shadow-sm bg-white">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 flex flex-col justify-between shadow-sm bg-white text-slate-800">
           <div>
             <div className="flex gap-2 items-center text-blue-600 dark:text-blue-400 mb-2">
-              <Percent size={16} />
+              <div className="p-1 rounded bg-blue-100 text-blue-600">%</div>
               <span className="text-[10px] font-bold uppercase tracking-widest">Growth Estimator</span>
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">compounding Target projections</h3>
@@ -159,7 +168,7 @@ export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendP
               <div className="space-y-1.5 text-xs font-bold text-slate-655 shrink-0">
                 <div className="flex justify-between items-baseline">
                   <label className="text-slate-500 font-bold uppercase text-[9px] tracking-wider">Estimated Monthly DCA Contribution (USD)</label>
-                  <span className="font-mono text-blue-600 font-bold">${monthlyContribution.toLocaleString()} / mo</span>
+                  <span className="font-mono text-blue-600 font-bold">${safeToLocaleString(monthlyContribution)} / mo</span>
                 </div>
                 <input 
                   type="range"
@@ -177,16 +186,16 @@ export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendP
           <div className="mt-8 p-5 bg-blue-50/20 dark:bg-slate-900/10 border border-blue-105/20 dark:border-slate-800/10 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-xs">
             <div>
               <span className="text-[9px] text-slate-400 uppercase font-black block tracking-widest">Projected Core Value ({compoundYears}yr)</span>
-              <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">${calculateEstimate().toLocaleString()}</span>
+              <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">${safeToLocaleString(calculateEstimate())}</span>
             </div>
             <div className="text-[11px] text-slate-450 font-medium text-left sm:text-right max-w-sm">
-              Includes initial core balance of <strong className="text-slate-900 dark:text-slate-50">${portfolioValue.toLocaleString()}</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">{stats.weightedApy.toFixed(2)}% APY</strong>.
+              Includes initial core balance of <strong className="text-slate-900 dark:text-slate-50">${safeToLocaleString(portfolioValue)}</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">{safeToFixed(stats.weightedApy, 2)}% APY</strong>.
             </div>
           </div>
         </div>
 
         {/* Compound note informational box (4 Columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-400">
               <Info size={16} />

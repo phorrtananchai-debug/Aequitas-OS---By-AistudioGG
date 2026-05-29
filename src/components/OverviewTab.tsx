@@ -44,10 +44,38 @@ export default function OverviewTab({
   const divStats = calculateDividendStats(holdings);
 
   const stats = [
-    { title: 'Total Portfolio Value', value: `$${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: 'Steady', isPositive: true, icon: BarChart3, color: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/20' },
-    { title: 'Portfolio Health Rating', value: `${healthScore.toFixed(1)}%`, change: 'Optimal', isPositive: true, icon: ShieldCheck, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/20' },
-    { title: 'Target Monthly DCA', value: `$${dcaTarget.toLocaleString()}`, change: 'Plan Configured', isPositive: true, icon: Calendar, color: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/20' },
-    { title: 'Dividends (Monthly Est.)', value: `$${divStats.monthlyEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, change: 'Passive Income', isPositive: true, icon: TrendingUp, color: 'text-purple-650 dark:text-purple-400 bg-purple-50/80 dark:bg-purple-950/20' },
+    {
+      title: 'Total Portfolio Value',
+      value: `$${portfolioValue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}`,
+      change: 'Steady',
+      isPositive: true,
+      icon: BarChart3,
+      color: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/20'
+    },
+    {
+      title: 'Portfolio Health Rating',
+      value: `${healthScore?.toFixed(1) ?? '0.0'}%`,
+      change: 'Optimal',
+      isPositive: true,
+      icon: ShieldCheck,
+      color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/20'
+    },
+    {
+      title: 'Target Monthly DCA',
+      value: `$${dcaTarget?.toLocaleString() ?? '0'}`,
+      change: 'Plan Configured',
+      isPositive: true,
+      icon: Calendar,
+      color: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/20'
+    },
+    {
+      title: 'Dividends (Monthly Est.)',
+      value: `$${divStats.monthlyEst?.toLocaleString(undefined, { maximumFractionDigits: 0 }) ?? '0'}`,
+      change: 'Passive Income',
+      isPositive: true,
+      icon: TrendingUp,
+      color: 'text-purple-650 dark:text-purple-400 bg-purple-50/80 dark:bg-purple-950/20'
+    },
   ];
 
   return (
@@ -202,14 +230,14 @@ export default function OverviewTab({
 
             {/* Visual ratio bar */}
             <div className="space-y-4">
-              {layerStats.layers.filter(l => l.name !== 'Sandbox Layer').map(layer => (
+              {(layerStats?.layers || []).filter(l => l && l.name !== 'Sandbox Layer').map(layer => (
                 <div key={layer.name}>
                   <div className="flex justify-between text-xs font-semibold mb-2">
                     <span className="text-slate-550 dark:text-slate-300">{layer.name}</span>
-                    <span className="font-mono text-slate-900 dark:text-white">{layer.pct}% <span className="text-slate-400 font-light">/ Goal: {layer.target}%</span></span>
+                    <span className="font-mono text-slate-900 dark:text-white">{layer.pct ?? 0}% <span className="text-slate-400 font-light">/ Goal: {layer.target ?? 0}%</span></span>
                   </div>
                   <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className={`h-full ${layer.color}`} style={{ width: `${layer.pct}%` }} />
+                    <div className={`h-full ${layer.color || ''}`} style={{ width: `${layer.pct ?? 0}%` }} />
                   </div>
                 </div>
               ))}
@@ -219,7 +247,7 @@ export default function OverviewTab({
           <div className="mt-8 p-4 rounded-2xl bg-slate-100/50 dark:bg-slate-900/10 border border-slate-200/40 dark:border-slate-808/10 flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
               <Zap size={15} className="text-blue-600 dark:text-blue-450 shrink-0 animate-pulse" />
-              <p className="text-slate-500 dark:text-slate-400 font-medium">Combination drift rate is safely {driftPct}% (Limit: 3.5%). Drift rebalancing resolved naturally via monthly DCA directions.</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Combination drift rate is safely {driftPct ?? 0}% (Limit: 3.5%). Drift rebalancing resolved naturally via monthly DCA directions.</p>
             </div>
             <button 
               onClick={() => setActiveTab('dcaPlan')}
@@ -240,16 +268,19 @@ export default function OverviewTab({
               <div className="gap-2 p-3.5 rounded-xl bg-slate-50 border border-slate-100 dark:bg-slate-950/20 dark:border-slate-900/40 shadow-sm flex flex-col">
                 <span className="text-[9px] uppercase font-black text-rose-600 tracking-wider">DRIFT OBSERVATION</span>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans mt-0.5">
-                  {dailyBrief.aiObservation}
+                  {dailyBrief?.aiObservation || 'No active drift observations detected.'}
                 </p>
               </div>
 
               <div className="gap-2 p-3.5 rounded-xl bg-slate-50 border border-slate-100 dark:bg-slate-950/20 dark:border-slate-900/40 shadow-sm flex flex-col">
                 <span className="text-[9px] uppercase font-black text-blue-600 tracking-wider">TACTICAL TO-DO</span>
                 <ul className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans space-y-1 mt-0.5 list-disc pl-4">
-                  {dailyBrief.whatToReviewToday.slice(0, 2).map((item, id) => (
+                  {(dailyBrief?.whatToReviewToday || []).slice(0, 2).map((item, id) => (
                     <li key={id}>{item}</li>
                   ))}
+                  {(!dailyBrief?.whatToReviewToday || dailyBrief.whatToReviewToday.length === 0) && (
+                    <li>No urgent review actions scheduled.</li>
+                  )}
                 </ul>
               </div>
             </div>

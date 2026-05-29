@@ -187,7 +187,8 @@ export default function App() {
 
   // Sync state derived from sum of holdings
   useEffect(() => {
-    const sum = holdings.reduce((acc, curr) => acc + curr.value, 0);
+    const safeHoldings = Array.isArray(holdings) ? holdings : [];
+    const sum = safeHoldings.reduce((acc, curr) => acc + (curr?.value || 0), 0);
     // Align portfolio value only if close or trigger manual recalculations
     if (Math.abs(sum - portfolioValue) > 0.01) {
       setPortfolioValue(sum);
@@ -205,13 +206,14 @@ export default function App() {
 
   // Toast notifications manager
   const pushNotification = (alert: Omit<AlertItem, 'id' | 'time'>) => {
+    if (!alert) return;
     const freshAlert: AlertItem = {
       ...alert,
       id: `alert-${Date.now()}`,
       time: 'Just now'
     };
     
-    setNotifications(prev => [freshAlert, ...prev]);
+    setNotifications(prev => [freshAlert, ...(Array.isArray(prev) ? prev : [])]);
     setActiveToast(freshAlert);
     
     // Auto-erase toast after 5s
@@ -268,6 +270,7 @@ export default function App() {
 
   // Aequitas AI import action parser
   const handleImportAiSchema = (parsed: AiImportSchema) => {
+    if (!parsed) return;
     setLatestAiImportPlan(parsed);
     setAiImportStatus(`Successfully parsed AI plan on ${new Date().toLocaleTimeString()}`);
 
@@ -277,9 +280,10 @@ export default function App() {
       
       // Update asset cash holdings value if totalValue varies or updates
       if (typeof totalValue === 'number') {
-        setHoldings(prev => prev.map(h => {
-          if (h.type === 'Cash') {
-            const othersValueSum = prev.filter(x => x.type !== 'Cash').reduce((sum, current) => sum + current.value, 0);
+        setHoldings(prev => (Array.isArray(prev) ? prev : []).map(h => {
+          if (h && h.type === 'Cash') {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            const othersValueSum = safePrev.filter(x => x && x.type !== 'Cash').reduce((sum, current) => sum + (current?.value || 0), 0);
             const nextCashValue = Math.max(0, totalValue - othersValueSum);
             return { ...h, value: nextCashValue, units: nextCashValue };
           }

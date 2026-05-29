@@ -97,7 +97,7 @@ export default function Header({
             className="p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/50 rounded-full transition-all relative transform hover:scale-105"
           >
             <Bell size={18} />
-            {notifications.length > 0 && (
+            {(Array.isArray(notifications) && notifications.length > 0) && (
               <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] font-black flex items-center justify-center animate-bounce">
                 {notifications.length}
               </span>
@@ -109,9 +109,9 @@ export default function Header({
               onClick={(e) => e.stopPropagation()}
               className="absolute right-0 mt-3 w-80 glass-panel border border-slate-200/80 dark:border-slate-800/80 rounded-2xl shadow-2xl p-4 text-slate-800 dark:text-slate-100 z-50 animate-fade-in"
             >
-              <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+              <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-800/60 text-slate-800">
                 <span className="font-bold text-xs tracking-wider text-slate-400 dark:text-slate-500 uppercase">ALLOCATION UPDATES</span>
-                {notifications.length > 0 && (
+                {(Array.isArray(notifications) && notifications.length > 0) && (
                   <button 
                     onClick={onClearAllNotifications}
                     className="text-[10px] text-[#6F685F] hover:underline hover:text-[#1E1B16] dark:text-slate-400 bg-transparent shrink-0 font-medium"
@@ -121,13 +121,13 @@ export default function Header({
                 )}
               </div>
               
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {notifications.length === 0 ? (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1 text-slate-800">
+                {(!Array.isArray(notifications) || notifications.length === 0) ? (
                   <p className="text-xs text-slate-400 text-center py-4">No active tactical alerts</p>
                 ) : (
                   notifications.map((alert) => (
                     <div 
-                      key={alert.id}
+                      key={alert?.id || Math.random()}
                       className="p-2.5 rounded-lg bg-white/40 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/50 relative group"
                     >
                       <button

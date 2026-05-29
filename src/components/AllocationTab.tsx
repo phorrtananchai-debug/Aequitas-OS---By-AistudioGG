@@ -1,7 +1,14 @@
-import { useState } from 'react';
-import { Sliders, Zap, CheckCircle2, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Plus,
+  Check,
+  RefreshCw,
+  Sliders,
+  Zap,
+  CheckCircle2
+} from 'lucide-react';
 import { Holding, AiImportSchema } from '../types';
-import { calculateLayerStats, calculatePortfolioDrift } from '../core/utils';
+import { calculateLayerStats, calculatePortfolioDrift, safeToFixed } from '../core/utils';
 
 interface AllocationTabProps {
   onTriggerAlert: (alert: { type: 'high' | 'advisory' | 'monitoring' | 'success'; typeLabel: string; title: string; description: string }) => void;
@@ -13,12 +20,14 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
   const [driftTolerance, setDriftTolerance] = useState<number>(3.5);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
-  const drift = holdings && holdings.length > 0 ? calculatePortfolioDrift(holdings) : 0;
-  const layerStats = calculateLayerStats(holdings || []);
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const drift = calculatePortfolioDrift(safeHoldings);
+  const layerStats = calculateLayerStats(safeHoldings);
 
   const getTargetPct = (layerName: string, defaultVal: number): number => {
     if (latestAiImportPlan?.allocationPlan?.buckets) {
-      const found = latestAiImportPlan.allocationPlan.buckets.find(b => b.name === layerName);
+      const safeBuckets = Array.isArray(latestAiImportPlan.allocationPlan.buckets) ? latestAiImportPlan.allocationPlan.buckets : [];
+      const found = safeBuckets.find(b => b && b.name === layerName);
       if (found && typeof found.targetPct === 'number') return found.targetPct;
     }
     return defaultVal;
@@ -55,19 +64,19 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
       {/* Overview Cards Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Total Alignment Index</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{Math.max(0, 100 - drift).toFixed(1)}%</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Total Alignment Index</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{safeToFixed(Math.max(0, 100 - drift), 1)}%</span>
           <p className="text-[10px] text-emerald-600 font-bold uppercase mt-2">{drift <= 3.5 ? 'Highly coherent' : 'Drift detected'}</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Weighted Capital Drift</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Weighted Capital Drift</span>
           <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{drift}%</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">{drift <= driftTolerance ? 'Below trigger threshold' : 'Breached safety bound'}</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Drift Safety Bound</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Drift Safety Bound</span>
           <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">±{driftTolerance}%</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Adjustable parameters</p>
         </div>
@@ -77,7 +86,7 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Allocations & Targets List (8 Columns) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <div>
             <div className="flex justify-between items-start pb-4 border-b border-slate-100 dark:border-slate-800/45 mb-6">
               <div>
@@ -95,27 +104,27 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
             </div>
 
             <div className="space-y-6">
-              {layerStats.layers.map((alloc) => {
+              {(layerStats?.layers || []).map((alloc) => {
                 const target = getTargetPct(alloc.name, alloc.target);
-                const driftVal = Math.abs(alloc.pct - target);
+                const driftVal = Math.abs((alloc.pct ?? 0) - target);
                 return (
                   <div key={alloc.name} className="space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
                       <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${alloc.color}`} />
+                        <span className={`w-2.5 h-2.5 rounded-full ${alloc.color || ''}`} />
                         <span className="text-slate-805 font-bold dark:text-slate-200">{alloc.name}</span>
                       </div>
                       <span className="font-mono text-slate-900 dark:text-white">
-                        {alloc.pct}% <span className="text-slate-400 font-normal">/ {target}% target</span>
+                        {alloc.pct ?? 0}% <span className="text-slate-400 font-normal">/ {target}% target</span>
                       </span>
                     </div>
 
                     <div className="flex gap-2">
                       <div className="flex-grow h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
-                        <div className={`h-full ${alloc.color}`} style={{ width: `${alloc.pct}%` }} />
+                        <div className={`h-full ${alloc.color || ''}`} style={{ width: `${alloc.pct ?? 0}%` }} />
                       </div>
                       <span className="font-mono text-[9px] font-black uppercase text-emerald-600 shrink-0">
-                        {driftVal < 0.1 ? 'Aligned' : `Drift: ${driftVal.toFixed(1)}%`}
+                        {driftVal < 0.1 ? 'Aligned' : `Drift: ${safeToFixed(driftVal, 1)}%`}
                       </span>
                     </div>
                   </div>
@@ -131,7 +140,7 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
         </div>
 
         {/* Drift Adjuster Pane (4 Columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <div className="space-y-6">
             <div>
               <span className="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400">
@@ -160,7 +169,7 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
 
               {/* Informational Advisory block */}
               <div className="p-3 bg-blue-50/20 dark:bg-slate-900/35 border border-blue-105/10 rounded-xl flex items-start gap-2 text-xs">
-                <Zap size={15} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                <Sliders size={15} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-bold text-slate-800 dark:text-slate-200">Continuous Drift Guard</h4>
                   <p className="text-[10px] text-slate-400 leading-normal mt-0.5">

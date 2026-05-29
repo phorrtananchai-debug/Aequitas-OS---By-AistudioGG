@@ -1,21 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  TrendingUp, 
-  Sparkles, 
-  HelpCircle, 
-  Sliders, 
-  AlertTriangle, 
-  Layers, 
-  Lock, 
-  ChevronRight, 
-  Coins,
   ArrowUpRight,
-  ShieldAlert,
   Compass,
-  Calendar
+  Lock,
+  Sparkles,
+  Sliders
 } from 'lucide-react';
 import { AlertItem, Holding, DcaPlan } from '../types';
-import { calculatePortfolioHealth, calculateLayerStats, formatCurrency } from '../core/utils';
+import { calculatePortfolioHealth, calculateLayerStats, formatCurrency, safeToLocaleString, safeToFixed } from '../core/utils';
 
 interface PortfolioProps {
   portfolioValue: number;
@@ -42,19 +34,19 @@ const CHART_POINTS = [
 
 export default function PortfolioTab({
   portfolioValue,
-  onUpdatePortfolio,
   onTriggerAlert,
   holdings,
   dcaPlan
 }: PortfolioProps) {
-  const [chartRange, setChartRange] = useState<'1H' | '1D' | '1W' | '1M'>('1M');
+  const [chartRange, setChartRange] = useState<'1D' | '1W' | '1M'>('1M');
   const [alignmentStatus, setAlignmentStatus] = useState<'standard' | 'aligned'>('standard');
 
-  const health = calculatePortfolioHealth(holdings);
-  const layerStats = calculateLayerStats(holdings);
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const health = calculatePortfolioHealth(safeHoldings);
+  const layerStats = calculateLayerStats(safeHoldings);
 
-  const coreLayer = layerStats.layers.find(l => l.name === 'Core ETF Layer');
-  const growthLayer = layerStats.layers.find(l => l.name === 'Growth Layer');
+  const coreLayer = layerStats.layers.find(l => l && l.name === 'Core ETF Layer');
+  const growthLayer = layerStats.layers.find(l => l && l.name === 'Growth Layer');
 
   // Tooltip tracking states
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -108,7 +100,7 @@ export default function PortfolioTab({
     });
   };
 
-  const gainLossTotal = holdings.reduce((sum, h) => sum + h.gainLoss, 0);
+  const gainLossTotal = safeHoldings.reduce((sum, h) => sum + (h?.gainLoss || 0), 0);
   const avgCostBasis = portfolioValue - gainLossTotal;
   const gainPctTotal = avgCostBasis > 0 ? (gainLossTotal / avgCostBasis) * 100 : 0;
 
@@ -132,7 +124,7 @@ export default function PortfolioTab({
         {/* Info elements representing capital stewardship */}
         <div className="relative z-20 flex flex-col md:flex-row justify-between items-start md:items-end w-full gap-6">
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 text-slate-800">
               <span className="px-3 py-1 bg-blue-50/90 dark:bg-blue-900/40 border border-blue-200/50 dark:border-blue-800/30 rounded-full text-blue-600 dark:text-blue-450 text-[10px] font-bold tracking-wider leading-none flex items-center gap-1.5 shadow-none">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400" />
                 OFFLINE ACTIVE PARAMS
@@ -157,7 +149,7 @@ export default function PortfolioTab({
               </span>
               <span className="text-slate-500 dark:text-slate-405 text-xs font-semibold flex items-center gap-0.5">
                 <ArrowUpRight size={13} strokeWidth={2.5} className={gainLossTotal >= 0 ? 'text-emerald-500' : 'text-rose-500 rotate-90'} />
-                {gainPctTotal.toFixed(2)}% total
+                {safeToFixed(gainPctTotal, 2)}% total
               </span>
             </div>
 
@@ -183,7 +175,7 @@ export default function PortfolioTab({
         <div className="lg:col-span-8 space-y-6">
           
           {/* Performance intel chart box */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 relative min-h-[400px] flex flex-col justify-between shadow-sm bg-white">
+          <div className="glass-panel rounded-3xl p-6 sm:p-8 relative min-h-[400px] flex flex-col justify-between shadow-sm bg-white text-slate-800">
             <div>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
@@ -283,7 +275,7 @@ export default function PortfolioTab({
                   >
                     <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{hoverData.time}</div>
                     <div className="text-xs font-bold font-mono text-slate-900 dark:text-blue-500 mt-0.5">
-                      ${hoverData.balance.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                      ${safeToLocaleString(hoverData.balance, { maximumFractionDigits: 0 })}
                     </div>
                   </div>
                 )}
@@ -303,14 +295,14 @@ export default function PortfolioTab({
               </div>
               <div>
                 <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 dark:text-slate-500">Holding Assets Count</span>
-                <span className="text-base sm:text-lg font-black block mt-0.5 text-slate-800 dark:text-slate-100">{holdings.length} Positions</span>
+                <span className="text-base sm:text-lg font-black block mt-0.5 text-slate-800 dark:text-slate-100">{safeHoldings.length} Positions</span>
               </div>
             </div>
 
           </div>
 
           {/* AI Advisor thesis parameters */}
-          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-sm bg-white">
+          <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-sm bg-white text-slate-800">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/10">
                 <Compass size={24} />
@@ -333,7 +325,7 @@ export default function PortfolioTab({
                     <span className="text-[10px] uppercase font-bold text-emerald-650 dark:text-emerald-450">Active</span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-sans mt-1">
-                    Strong underlying EPS growth among US growth equities continues to justify the current Growth allocation ({growthLayer?.pct}%). No tactical actions required.
+                    Strong underlying EPS growth among US growth equities continues to justify the current Growth allocation ({growthLayer?.pct ?? 0}%). No tactical actions required.
                   </p>
                 </div>
 
@@ -371,7 +363,7 @@ export default function PortfolioTab({
                   
                   <div className="absolute flex flex-col items-center justify-center">
                     <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tighter">
-                      {health.toFixed(1)}%
+                      {safeToFixed(health, 1)}%
                     </span>
                     <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest mt-0.5">Health</span>
                   </div>
@@ -391,13 +383,13 @@ export default function PortfolioTab({
         </div>
 
         {/* Dynamic Sidebar widgets (4 columns layout) */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 space-y-6 text-slate-800">
           
           {/* Re-balance allocations panel */}
           <div className="glass-panel rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between min-h-[350px] bg-white">
             <div>
               <h3 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">Allocation Alignment Guidance</h3>
-              <p className="text-xs text-slate-450 mt-1">Calibration suggestion based on S&P 500 relative valuation vectors.</p>
+              <p className="text-xs text-slate-455 mt-1">Calibration suggestion based on S&P 500 relative valuation vectors.</p>
 
               <div className="mt-6 space-y-6">
                 <div className="flex items-center justify-between">
@@ -406,8 +398,8 @@ export default function PortfolioTab({
                       <Lock size={16} />
                     </div>
                     <div>
-                      <h4 className="text-xs font-semibold text-slate-850 dark:text-slate-200">Current {coreLayer?.name}</h4>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{coreLayer?.pct}% of portfolio weight</p>
+                      <h4 className="text-xs font-semibold text-slate-850 dark:text-slate-200">Current {coreLayer?.name || 'Layer'}</h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">{coreLayer?.pct ?? 0}% of portfolio weight</p>
                     </div>
                   </div>
                   <span className="text-sm font-semibold font-mono text-slate-600 dark:text-slate-300">
@@ -422,11 +414,11 @@ export default function PortfolioTab({
                     </div>
                     <div>
                       <h4 className="text-xs font-semibold text-blue-600 dark:text-blue-400">Suggested target plan</h4>
-                      <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-0.5">{coreLayer?.target.toFixed(1)}% allocation weight</p>
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-0.5">{safeToFixed(coreLayer?.target ?? 0, 1)}% allocation weight</p>
                     </div>
                   </div>
                   <span className="text-sm font-semibold font-mono text-blue-600 dark:text-blue-300">
-                    {formatCurrency((coreLayer?.target || 0) / 100 * portfolioValue)}
+                    {formatCurrency(((coreLayer?.target ?? 0) / 100) * portfolioValue)}
                   </span>
                 </div>
               </div>
@@ -453,7 +445,8 @@ export default function PortfolioTab({
             </div>
 
             <div className="space-y-3.5">
-              {dcaPlan.items.slice(0, 3).map((item, idx) => {
+              {(dcaPlan?.items || []).slice(0, 3).map((item, idx) => {
+                if (!item) return null;
                 const colors = [
                   'border-blue-500 text-blue-600 dark:text-blue-300',
                   'border-emerald-500 text-emerald-650 dark:text-emerald-400',
@@ -469,10 +462,13 @@ export default function PortfolioTab({
                       <h4 className="text-xs font-semibold text-slate-800 dark:text-white group-hover:text-blue-600 transition-colors">{item.name}</h4>
                       <p className="text-[10px] text-slate-400 mt-0.5 font-sans">{item.ticker} accumulation flow.</p>
                     </div>
-                    <span className={`text-xs font-bold font-mono ${textClass}`}>${item.targetAmount.toLocaleString()}/mo</span>
+                    <span className={`text-xs font-bold font-mono ${textClass}`}>${safeToLocaleString(item.targetAmount)}/mo</span>
                   </div>
                 );
               })}
+              {(!dcaPlan?.items || dcaPlan.items.length === 0) && (
+                 <div className="p-4 text-center text-slate-400 text-xs italic">No active DCA channels configured.</div>
+              )}
             </div>
           </div>
 

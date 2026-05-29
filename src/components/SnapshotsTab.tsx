@@ -4,14 +4,11 @@ import {
   Trash2, 
   Download, 
   RotateCcw, 
-  CheckCircle2, 
   AlertCircle,
-  FileSpreadsheet,
-  Clock,
-  Sparkles
+  Clock
 } from 'lucide-react';
 import { Holding } from '../types';
-import { calculatePortfolioDrift } from '../core/utils';
+import { calculatePortfolioDrift, safeToLocaleString } from '../core/utils';
 
 interface SnapshotItem {
   id: string;
@@ -38,7 +35,8 @@ export default function SnapshotsTab({
   const [snapshots, setSnapshots] = useState<SnapshotItem[]>([]);
   const [newSnapshotName, setNewSnapshotName] = useState('');
 
-  const drift = calculatePortfolioDrift(holdings);
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const drift = calculatePortfolioDrift(safeHoldings);
 
   const handleCreateSnapshot = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +51,7 @@ export default function SnapshotsTab({
       drift: `${drift}%`
     };
 
-    setSnapshots([newSnap, ...snapshots]);
+    setSnapshots([newSnap, ...(Array.isArray(snapshots) ? snapshots : [])]);
     setNewSnapshotName('');
     onTriggerAlert({
       type: 'success',
@@ -64,6 +62,7 @@ export default function SnapshotsTab({
   };
 
   const handleApplySnapshot = (snap: SnapshotItem) => {
+    if (!snap) return;
     onUpdatePortfolio(snap.value);
     onTriggerAlert({
       type: 'success',
@@ -74,7 +73,7 @@ export default function SnapshotsTab({
   };
 
   const handleDeleteSnapshot = (id: string, name: string) => {
-    setSnapshots(snapshots.filter(s => s.id !== id));
+    setSnapshots((Array.isArray(snapshots) ? snapshots : []).filter(s => s && s.id !== id));
     onTriggerAlert({
       type: 'advisory',
       typeLabel: 'SNAPSHOT PRUNED',
@@ -119,19 +118,19 @@ export default function SnapshotsTab({
       {/* Overview stats & backup trigger */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Total Saved Snapshots</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{snapshots.length} Records</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Total Saved Snapshots</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{Array.isArray(snapshots) ? snapshots.length : 0} Records</span>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Active Sandbox Size</span>
-          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">${portfolioValue.toLocaleString()}</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Active Sandbox Size</span>
+          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">${safeToLocaleString(portfolioValue)}</span>
         </div>
 
         {/* Local Backup Action block */}
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-205/60 dark:border-slate-800/25 flex flex-col justify-between bg-white">
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Backup Configuration</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-455 block mb-1">Backup Configuration</span>
             <span className="text-xs text-slate-550 leading-normal block">Save an offline backup record bundle.</span>
           </div>
           <button
@@ -148,7 +147,7 @@ export default function SnapshotsTab({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* New Snapshot formulation (4 Columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 sm:p-8 flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <form onSubmit={handleCreateSnapshot} className="space-y-6">
             <div className="pb-4 border-b border-slate-100 dark:border-slate-800/25">
               <span className="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400 block">
@@ -174,11 +173,11 @@ export default function SnapshotsTab({
               <div className="p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-[10px] text-slate-500 leading-normal font-medium space-y-1.5 border border-slate-100 dark:border-slate-900/10">
                 <div className="flex justify-between">
                   <span>Included Assets:</span>
-                  <span className="font-bold text-slate-700 dark:text-slate-350">{holdings.length} Positions</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-350">{safeHoldings.length} Positions</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Balance Record:</span>
-                  <span className="font-mono text-slate-700 dark:text-slate-350">${portfolioValue.toLocaleString()}</span>
+                  <span className="font-mono text-slate-700 dark:text-slate-350">${safeToLocaleString(portfolioValue)}</span>
                 </div>
               </div>
             </div>
@@ -194,14 +193,14 @@ export default function SnapshotsTab({
         </div>
 
         {/* Snapshot Ledger List (8 Columns) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <div className="pb-4 border-b border-slate-100 dark:border-slate-800/45 mb-6">
             <span className="text-[10px] uppercase font-black tracking-wider text-slate-450">CHRONO-REGISTRY</span>
             <h3 className="text-lg font-bold tracking-tight mt-1 text-slate-900 dark:text-white">Saved State Records</h3>
           </div>
 
           <div className="space-y-4">
-            {snapshots.length === 0 ? (
+            {(!Array.isArray(snapshots) || snapshots.length === 0) ? (
               <div className="p-8 text-center text-slate-400 space-y-2">
                 <AlertCircle className="mx-auto" size={24} />
                 <p className="text-xs font-semibold">No saved snapshot states recorded yet.</p>
@@ -229,7 +228,7 @@ export default function SnapshotsTab({
                   <div className="flex items-center gap-4 justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
                     <div className="text-right shrink-0">
                       <span className="text-[9px] uppercase font-bold text-slate-400 block">ARCHIVED VALUE</span>
-                      <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">${snap.value.toLocaleString()}</span>
+                      <span className="text-sm font-mono font-bold text-slate-900 dark:text-white">${safeToLocaleString(snap.value)}</span>
                     </div>
 
                     <div className="flex gap-2">

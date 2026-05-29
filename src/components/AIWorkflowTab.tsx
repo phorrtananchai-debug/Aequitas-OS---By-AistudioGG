@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import { 
-  Brain, 
   ArrowRight, 
-  Copy, 
   Check, 
   Upload, 
-  Download, 
   CheckCircle2, 
   Sparkles, 
-  Database, 
-  FileCode,
-  LayoutDashboard
+  FileCode
 } from 'lucide-react';
 import { Holding, DcaPlan, DividendPlan, ThaiFundNavState, AiImportSchema, AlertItem, TabType, LabsSuggestion } from '../types';
-import { calculatePortfolioDrift, calculatePortfolioHealth } from '../core/utils';
+import { calculatePortfolioDrift, calculatePortfolioHealth, safeToFixed, safeToLocaleString } from '../core/utils';
 
 interface AIWorkflowTabProps {
   portfolioValue: number;
@@ -37,18 +32,16 @@ export default function AIWorkflowTab({
   thaiFundNavs,
   onImportAiSchema,
   latestImportStatus,
-  onTriggerAlert,
-  setActiveTab,
-  labsSuggestions,
-  onUpdatePortfolio
+  onTriggerAlert
 }: AIWorkflowTabProps) {
   const [copied, setCopied] = useState(false);
   const [pastedJson, setPastedJson] = useState('');
   const [importFeedback, setImportFeedback] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
 
-  const drift = calculatePortfolioDrift(holdings);
-  const health = calculatePortfolioHealth(holdings);
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const drift = calculatePortfolioDrift(safeHoldings);
+  const health = calculatePortfolioHealth(safeHoldings);
 
   // Generate the actual live state JSON to copy!
   const activeContext = JSON.stringify({
@@ -61,47 +54,47 @@ export default function AIWorkflowTab({
       health_score_pct: health,
       currency: "USD"
     },
-    live_holdings: (holdings || []).map(h => ({
-      ticker: h.ticker,
-      name: h.name,
-      type: h.type,
-      units: h.units,
-      avg_cost: h.avgCost,
-      current_price: h.currentPrice,
-      subtotal_value: h.value,
-      percent: h.allocationPct
+    live_holdings: safeHoldings.map(h => ({
+      ticker: h?.ticker || 'N/A',
+      name: h?.name || 'N/A',
+      type: h?.type || 'N/A',
+      units: h?.units ?? 0,
+      avg_cost: h?.avgCost ?? 0,
+      current_price: h?.currentPrice ?? 0,
+      subtotal_value: h?.value ?? 0,
+      percent: h?.allocationPct ?? 0
     })),
     monthly_dca_plan: {
-      monthlyContributionPlan: dcaPlan?.monthlyContributionPlan,
-      cashAvailable: dcaPlan?.cashAvailable,
-      nextContributionReminder: dcaPlan?.nextContributionReminder,
+      monthlyContributionPlan: dcaPlan?.monthlyContributionPlan ?? 0,
+      cashAvailable: dcaPlan?.cashAvailable ?? 0,
+      nextContributionReminder: dcaPlan?.nextContributionReminder || 'None',
       items: (dcaPlan?.items || []).map(item => ({
-        ticker: item.ticker,
-        name: item.name,
-        targetAmount: item.targetAmount,
-        priorityOrder: item.priorityOrder,
-        interval: item.interval,
-        status: item.status
+        ticker: item?.ticker || 'N/A',
+        name: item?.name || 'N/A',
+        targetAmount: item?.targetAmount ?? 0,
+        priorityOrder: item?.priorityOrder ?? 0,
+        interval: item?.interval || 'Monthly',
+        status: item?.status || 'Pending'
       }))
     },
     dividend_plan: {
-      expectedMonthlyDividend: dividendPlan?.expectedMonthlyDividend,
-      annualizedIncomeEstimate: dividendPlan?.annualizedIncomeEstimate,
-      reinvestmentStatusDefault: dividendPlan?.reinvestmentStatusDefault,
-      cashflowStabilityNotes: dividendPlan?.cashflowStabilityNotes,
+      expectedMonthlyDividend: dividendPlan?.expectedMonthlyDividend ?? 0,
+      annualizedIncomeEstimate: dividendPlan?.annualizedIncomeEstimate ?? 0,
+      reinvestmentStatusDefault: dividendPlan?.reinvestmentStatusDefault || 'Manual',
+      cashflowStabilityNotes: dividendPlan?.cashflowStabilityNotes || '',
       items: (dividendPlan?.items || []).map(item => ({
-        ticker: item.ticker,
-        name: item.name,
-        yield: item.yield,
-        annualEst: item.annualEst,
-        frequency: item.frequency,
-        reinvestmentStatus: item.reinvestmentStatus
+        ticker: item?.ticker || 'N/A',
+        name: item?.name || 'N/A',
+        yield: item?.yield ?? 0,
+        annualEst: item?.annualEst ?? 0,
+        frequency: item?.frequency || 'Quarterly',
+        reinvestmentStatus: item?.reinvestmentStatus || 'Reinvest'
       }))
     },
     thai_nav_bridge_states: (thaiFundNavs || []).map(f => ({
-      ticker: f.ticker,
-      nav_thb: f.nav,
-      last_reconciled: f.lastUpdated
+      ticker: f?.ticker || 'N/A',
+      nav_thb: f?.nav ?? 0,
+      last_reconciled: f?.lastUpdated || 'Never'
     }))
   }, null, 2);
 
@@ -130,13 +123,15 @@ export default function AIWorkflowTab({
       
       // Basic validation checks
       const hasValidKey = 
-        parsed.portfolioSummary || 
-        parsed.assetPlans || 
-        parsed.allocationPlan || 
-        parsed.dcaPlan || 
-        parsed.dividendNotes || 
-        parsed.dailyBrief || 
-        parsed.labsSuggestions;
+        parsed && (
+          parsed.portfolioSummary ||
+          parsed.assetPlans ||
+          parsed.allocationPlan ||
+          parsed.dcaPlan ||
+          parsed.dividendNotes ||
+          parsed.dailyBrief ||
+          parsed.labsSuggestions
+        );
 
       if (!hasValidKey) {
         setImportSuccess(false);
@@ -172,9 +167,9 @@ export default function AIWorkflowTab({
       </section>
 
       {/* Manual AI Investment Loop - Visual Timeline Checklist */}
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 shadow-sm bg-white">
+      <div className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 shadow-sm bg-white text-slate-800">
         <div className="flex items-center gap-2 mb-6">
-          <Brain className="text-blue-600 dark:text-blue-400 animate-pulse" size={18} />
+          <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded flex items-center justify-center animate-pulse">✨</div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white font-sans">Human-Controlled Loop Workflow</h3>
         </div>
 
@@ -235,7 +230,7 @@ export default function AIWorkflowTab({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-2">
         
         {/* EXPORT WORKSPACE CONTEXT (6 Columns) */}
-        <div className="lg:col-span-6 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-6 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <div className="space-y-4 w-full">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800/10">
               <div className="flex gap-2 items-center text-blue-600">
@@ -259,13 +254,13 @@ export default function AIWorkflowTab({
             <textarea
               readOnly
               value={activeContext}
-              className="w-full h-80 font-mono text-[11px] bg-slate-5 p-4 rounded-xl text-slate-600 dark:text-slate-300 resize-none outline-none focus:ring-0 leading-relaxed border border-slate-150"
+              className="w-full h-80 font-mono text-[11px] bg-slate-50 p-4 rounded-xl text-slate-600 dark:text-slate-300 resize-none outline-none focus:ring-0 leading-relaxed border border-slate-150"
             />
           </div>
         </div>
 
         {/* IMPORT STATE PLAN (6 Columns) */}
-        <div className="lg:col-span-6 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-6 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <form onSubmit={handleImportPlan} className="space-y-4 w-full h-full flex flex-col justify-between">
             <div className="space-y-4">
               <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800/10">
@@ -342,7 +337,7 @@ export default function AIWorkflowTab({
     }
   ]
 }, null, 2)}
-                className="w-full h-44 font-mono text-[11px] bg-slate-5 border border-slate-150 rounded-xl p-4 text-slate-900 dark:text-white resize-none outline-none focus:outline-none focus:border-blue-500 leading-relaxed"
+                className="w-full h-44 font-mono text-[11px] bg-slate-50 border border-slate-150 rounded-xl p-4 text-slate-900 dark:text-white resize-none outline-none focus:outline-none focus:border-blue-500 leading-relaxed"
               />
 
               {/* Parsing feedback box */}
@@ -373,7 +368,7 @@ export default function AIWorkflowTab({
       </div>
 
       {/* Guided prompt template */}
-      <section className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 shadow-sm text-xs font-sans space-y-4 bg-white">
+      <section className="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 shadow-sm text-xs font-sans space-y-4 bg-white text-slate-800">
         <h4 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5 font-sans">
           <Sparkles size={15} className="text-blue-600 dark:text-blue-400" />
           Recommended Reasoning Directives

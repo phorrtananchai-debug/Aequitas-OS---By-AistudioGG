@@ -14,15 +14,12 @@ import {
   Beaker,
   RefreshCw,
   Download,
-  AlertCircle,
-  CheckCircle2,
-  Zap,
-  ArrowUpRight,
   ChevronRight,
   Camera,
   Workflow
 } from 'lucide-react';
 import { TabType } from '../types';
+import { safeToLocaleString } from '../core/utils';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -37,8 +34,6 @@ interface SidebarProps {
 export default function Sidebar({
   activeTab,
   setActiveTab,
-  onNewAnalysis,
-  onOpenSettings,
   onOpenSupport,
   onTriggerAlert,
   portfolioValue
@@ -67,7 +62,7 @@ export default function Sidebar({
       groupTitle: 'Portfolio',
       items: [
         { id: 'portfolio' as TabType, label: 'Portfolio', icon: Wallet, popup: null },
-        { id: 'holdings' as TabType, label: 'Holdings', icon: Layers, popup: null }, // Maps to markets originally
+        { id: 'holdings' as TabType, label: 'Holdings', icon: Layers, popup: null },
         { id: 'allocation' as TabType, label: 'Allocation', icon: PieChart, popup: 'allocation' },
         { id: 'dividends' as TabType, label: 'Dividends', icon: Coins, popup: 'dividends' },
         { id: 'dcaPlan' as TabType, label: 'DCA Plan', icon: Calendar, popup: null },
@@ -77,8 +72,8 @@ export default function Sidebar({
       groupTitle: 'Intelligence',
       items: [
         { id: 'aiWorkflow' as TabType, label: 'AI Workflow', icon: Workflow, popup: 'aiWorkflow' },
-        { id: 'aiAdvisor' as TabType, label: 'AI Advisor', icon: Sparkles, popup: 'aiAdvisor' }, // Maps to insights originally
-        { id: 'labs' as TabType, label: 'Labs', icon: Beaker, popup: 'labs' }, // Maps to strategy originally
+        { id: 'aiAdvisor' as TabType, label: 'AI Advisor', icon: Sparkles, popup: 'aiAdvisor' },
+        { id: 'labs' as TabType, label: 'Labs', icon: Beaker, popup: 'labs' },
       ]
     },
     {
@@ -108,7 +103,7 @@ export default function Sidebar({
     }
     hoverTimeoutRef.current = setTimeout(() => {
       setHoveredTab(itemId);
-    }, 120); // Smooth entry delay to prevent fast skip flickering
+    }, 120);
   };
 
   const handleMouseLeave = () => {
@@ -175,14 +170,15 @@ export default function Sidebar({
 
       {/* Nav groups rendering */}
       <div className="flex-grow space-y-5">
-        {navigationGroups.map((group) => (
+        {(navigationGroups || []).map((group) => (
           <div key={group.groupTitle} className="space-y-1">
             <h4 className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-3 mb-1.5">
               {group.groupTitle}
             </h4>
             
             <div className="space-y-0.5">
-              {group.items.map((item) => {
+              {(group.items || []).map((item) => {
+                if (!item) return null;
                 const IconComp = item.icon;
                 const isActive = activeTab === item.id;
                 
@@ -221,7 +217,7 @@ export default function Sidebar({
                       <div className="absolute left-60 top-1/2 -translate-y-1/2 ml-3 w-80 bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-xl p-5 backdrop-blur-md z-99 pointer-events-auto cursor-default animate-fade-in text-slate-800 dark:text-slate-105 transition-all">
                         {/* Popover Title */}
                         {item.popup === 'dailyBrief' && (
-                          <div className="space-y-3.5">
+                          <div className="space-y-3.5 text-slate-800">
                             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-805/15 pb-2">
                               <Newspaper size={16} className="text-blue-600" />
                               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Daily OS Briefing</span>
@@ -229,16 +225,12 @@ export default function Sidebar({
                             <div className="space-y-2">
                               <div>
                                 <span className="text-[9px] text-slate-400 uppercase font-bold block">Current balance</span>
-                                <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-50">${portfolioValue.toLocaleString()}</span>
+                                <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-50">${safeToLocaleString(portfolioValue)}</span>
                               </div>
                               <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800/10 text-[11px] space-y-1 leading-normal font-sans">
                                 <div className="flex justify-between">
                                   <span className="text-slate-450">Trend Climate</span>
                                   <span className="font-bold text-slate-700 dark:text-slate-350">Macro Stable</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-slate-450">Event Payout</span>
-                                  <span className="font-bold text-indigo-650 dark:text-indigo-400">Pending Jun 1</span>
                                 </div>
                               </div>
                               <span className="text-[10px] text-blue-600 dark:text-blue-400 block font-medium">✨ Target ranges checked and compliant</span>
@@ -247,7 +239,7 @@ export default function Sidebar({
                         )}
 
                         {item.popup === 'allocation' && (
-                          <div className="space-y-3.5">
+                          <div className="space-y-3.5 text-slate-800">
                             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-805/15 pb-2">
                               <PieChart size={16} className="text-blue-600" />
                               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Deviations Drift</span>
@@ -255,10 +247,7 @@ export default function Sidebar({
                             <div className="space-y-2.5">
                               <div>
                                 <span className="text-[9px] text-slate-400 uppercase font-bold block">COHERENCE DRIFT INDEX</span>
-                                <span className="text-sm font-bold text-slate-900 dark:text-slate-50">3.2% Target Deviation</span>
-                              </div>
-                              <div className="text-[11px] text-slate-500 font-sans leading-normal">
-                                Standard core splits are maintained under standard boundaries. Drift warning: <span className="text-emerald-600 font-bold">Stable Range</span>.
+                                <span className="text-sm font-bold text-slate-900 dark:text-slate-50">Active Analysis</span>
                               </div>
                               <button
                                 onClick={() => {
@@ -274,29 +263,25 @@ export default function Sidebar({
                         )}
 
                         {item.popup === 'dividends' && (
-                          <div className="space-y-3.5">
+                          <div className="space-y-3.5 text-slate-800">
                             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-805/15 pb-2">
                               <Coins size={16} className="text-blue-600" />
                               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Recurring Capital Yield</span>
                             </div>
                             <div className="space-y-2 text-xs">
                               <div className="flex justify-between py-1 border-b border-slate-100/50 dark:border-slate-800/10">
-                                <span className="text-slate-450">Expected Monthly</span>
-                                <span className="font-mono font-bold text-slate-900 dark:text-white">$3,150.00</span>
-                              </div>
-                              <div className="flex justify-between py-1 border-b border-slate-100/50 dark:border-slate-800/10">
-                                <span className="text-slate-455">Direct Target APY</span>
-                                <span className="font-mono font-bold text-emerald-600">7.20% Core APY</span>
+                                <span className="text-slate-455">Operating APY</span>
+                                <span className="font-mono font-bold text-emerald-600">Calculated on Ledger</span>
                               </div>
                               <p className="text-[10px] text-slate-400 leading-normal mt-2 font-sans">
-                                Upcoming payout: <strong className="text-slate-600 dark:text-slate-350">$420.00 SCHD Yield</strong> scheduled for Jun 1 deposition.
+                                Passive distributions are held in buffer for standard DCA compounding.
                               </p>
                             </div>
                           </div>
                         )}
 
                         {item.popup === 'aiWorkflow' && (
-                          <div className="space-y-3.5">
+                          <div className="space-y-3.5 text-slate-800">
                             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-805/15 pb-2">
                               <Workflow size={16} className="text-blue-600" />
                               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Manual AI Reasoning Cycle</span>
@@ -304,11 +289,8 @@ export default function Sidebar({
                             <div className="space-y-2.5">
                               <div>
                                 <span className="text-[9px] text-slate-400 uppercase font-black block">Active Guidance Anchor</span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-1">Manual Input &harr; Export &harr; Import Loop</span>
+                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-1">Input &harr; Export &harr; Import Loop</span>
                               </div>
-                              <p className="text-[11px] text-slate-500 font-medium font-sans">
-                                Manage local snapshot parameters and sync parsed AI suggestions safely.
-                              </p>
                               <button
                                 onClick={() => {
                                   setActiveTab('aiWorkflow');
@@ -323,37 +305,30 @@ export default function Sidebar({
                         )}
 
                         {item.popup === 'aiAdvisor' && (
-                          <div className="space-y-3.5">
+                          <div className="space-y-3.5 text-slate-800">
                             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-805/15 pb-2">
                               <Sparkles size={16} className="text-blue-600" />
                               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">System Intelligence Core</span>
                             </div>
                             <div className="space-y-2.5 font-sans">
-                              <div>
-                                <span className="text-[9px] text-slate-400 uppercase font-black block">Active Guidance Anchor</span>
-                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mt-1">Rebalancing recommended above 3.5% drift.</span>
-                              </div>
                               <div className="p-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl text-[10px] text-slate-450 font-medium leading-normal">
-                                Operating Status: All standard parameters normalized. Core indexes mapped to your local DCA plan successfully.
+                                Operating Status: Local guidelines enabled. Rebalancing recommended above 3.5% drift.
                               </div>
                             </div>
                           </div>
                         )}
 
                         {item.popup === 'labs' && (
-                          <div className="space-y-3.5">
+                          <div className="space-y-3.5 text-slate-800">
                             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-805/15 pb-2">
                               <Beaker size={16} className="text-blue-600" />
-                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-450">Backtest sandbox environments</span>
+                              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Backtest sandbox environments</span>
                             </div>
                             <div className="space-y-2.5">
                               <div className="flex justify-between items-center bg-blue-50/20 dark:bg-blue-950/20 px-2 py-1 rounded border border-blue-100/20">
                                 <span className="text-[10px] text-blue-600 font-bold uppercase">Sandbox Node</span>
                                 <span className="text-[9px] font-black tracking-widest bg-blue-600 text-white px-1.5 rounded uppercase">v0.9.8 stable</span>
                               </div>
-                              <p className="text-[11px] text-slate-500 font-medium font-sans">
-                                3 custom simulations loaded active. Mean Reversion matrix calibration in performance tracking mode.
-                              </p>
                             </div>
                           </div>
                         )}
@@ -409,48 +384,6 @@ export default function Sidebar({
                 </button>
                 <button
                   onClick={() => {
-                    setActiveTab('allocation');
-                    setCommandMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3.5 py-2 hover:bg-slate-100/60 dark:hover:bg-slate-800/10 rounded-lg font-bold text-slate-700 dark:text-slate-350 hover:text-blue-600 transition-colors flex items-center gap-2"
-                >
-                  <PieChart size={13} className="text-slate-400" />
-                  Review Allocation
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('dividends');
-                    setCommandMenuOpen(false);
-                    onTriggerAlert({
-                      type: 'success',
-                      typeLabel: 'YIELD REGISTERED',
-                      title: 'Weekly Payout Appended',
-                      description: 'Estimated standard stacking records registered and mapped to system DCA.'
-                    });
-                  }}
-                  className="w-full text-left px-3.5 py-2 hover:bg-slate-100/60 dark:hover:bg-slate-800/10 rounded-lg font-bold text-slate-700 dark:text-slate-350 hover:text-blue-600 transition-colors flex items-center gap-2"
-                >
-                  <Coins size={13} className="text-slate-400" />
-                  Add Dividend Entry
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab('dcaPlan');
-                    setCommandMenuOpen(false);
-                    onTriggerAlert({
-                      type: 'success',
-                      typeLabel: 'DCA RE-ALIGNED',
-                      title: 'Schedule Parameters Mapped',
-                      description: 'DCA Split weights optimized according to standard boundaries.'
-                    });
-                  }}
-                  className="w-full text-left px-3.5 py-2 hover:bg-slate-100/60 dark:hover:bg-slate-800/10 rounded-lg font-bold text-slate-700 dark:text-slate-350 hover:text-blue-600 transition-colors flex items-center gap-2"
-                >
-                  <Calendar size={13} className="text-slate-400" />
-                  Add DCA Contribution
-                </button>
-                <button
-                  onClick={() => {
                     setActiveTab('dailyBrief');
                     setCommandMenuOpen(false);
                   }}
@@ -466,7 +399,7 @@ export default function Sidebar({
 
         {/* Lower Utility rows (Sync, Export, Help) */}
         <div className="space-y-0.5">
-          {lowerUtilities.map((util) => {
+          {(lowerUtilities || []).map((util) => {
             const IconComp = util.icon;
             const isSync = util.id === 'sync';
             return (

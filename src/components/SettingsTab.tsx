@@ -1,27 +1,19 @@
 import React, { useState, FormEvent } from 'react';
 import { 
-  Settings as SettingsIcon, 
-  ShieldAlert, 
-  Cpu, 
   Save, 
   RefreshCw, 
   KeyRound, 
-  Server, 
   Eye, 
   EyeOff,
-  User,
+  Laptop,
+  ChevronRight,
   Database,
   Sparkles,
-  Laptop,
-  CheckCircle2,
   FolderLock,
-  Workflow,
   Wrench,
-  HelpCircle,
-  ToggleLeft,
   ToggleRight,
-  ChevronRight,
-  CircleDot
+  ToggleLeft,
+  Sliders
 } from 'lucide-react';
 
 interface SettingsTabProps {
@@ -50,7 +42,7 @@ export default function SettingsTab({
   const [baseCurrency, setBaseCurrency] = useState<string>('USD');
   const [dividendPref, setDividendPref] = useState<string>('compound');
   const [dcaInterval, setDcaInterval] = useState<string>('weekly');
-  const [ledgerVal, setLedgerVal] = useState<string>(portfolioValue.toString());
+  const [ledgerVal, setLedgerVal] = useState<string>(portfolioValue?.toString() || '0');
   const [nodeId, setNodeId] = useState<string>('sol-09');
 
   // AI Services state (Strictly Optional & Enhanced)
@@ -59,7 +51,6 @@ export default function SettingsTab({
   const [showGeminiKey, setShowGeminiKey] = useState<boolean>(false);
   const [openaiKey, setOpenaiKey] = useState<string>('');
   const [showOpenaiKey, setShowOpenaiKey] = useState<boolean>(false);
-  const [contextDepth, setContextDepth] = useState<'summary' | 'audit' | 'full'>('audit');
   const [aiMemory, setAiMemory] = useState<boolean>(true);
   const [aiCache, setAiCache] = useState<boolean>(true);
   const [aiSensitivity, setAiSensitivity] = useState<number>(4.0);
@@ -79,7 +70,7 @@ export default function SettingsTab({
     
     setTimeout(() => {
       const numericVal = parseFloat(ledgerVal);
-      if (!isNaN(numericVal) && numericVal > 0) {
+      if (!isNaN(numericVal) && numericVal >= 0) {
         onUpdatePortfolio(numericVal);
       }
       setIsSaving(false);
@@ -163,7 +154,7 @@ export default function SettingsTab({
 
           {/* Localized Operating Environment Status */}
           <div className="p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-905/20 border border-slate-150 dark:border-slate-850 text-xs mt-6 space-y-3">
-            <div className="flex justify-between items-center text-[10px] font-black tracking-wider text-slate-450 uppercase pb-2 border-b border-slate-100 dark:border-slate-800/45">
+            <div className="flex justify-between items-center text-[10px] font-black tracking-wider text-slate-455 uppercase pb-2 border-b border-slate-100 dark:border-slate-800/45">
               <span>LOCAL SECURITY INDEX</span>
               <span className="text-blue-600 dark:text-blue-400">PASSED</span>
             </div>
@@ -185,7 +176,7 @@ export default function SettingsTab({
         </div>
 
         {/* Right Side Settings Details Panel Forms (8 Columns) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 shadow-sm min-h-[480px]">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 shadow-sm min-h-[480px] bg-white text-slate-800">
           <form onSubmit={handleSaveParameters} className="space-y-6 flex flex-col justify-between h-full">
             <div className="space-y-6">
               
@@ -456,7 +447,7 @@ export default function SettingsTab({
                           onClick={() => setAiCache(!aiCache)}
                           className="text-blue-600"
                         >
-                          {aiCache ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
+                          {aiCache ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
                         </button>
                       </div>
                     </div>
@@ -472,7 +463,7 @@ export default function SettingsTab({
                           onClick={() => setAiMemory(!aiMemory)}
                           className="text-blue-600"
                         >
-                          {aiMemory ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
+                          {aiMemory ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
                         </button>
                       </div>
                     </div>
@@ -518,7 +509,7 @@ export default function SettingsTab({
                     </div>
 
                     {/* Google Drive sync Option */}
-                    <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
+                    <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
                       <div>
                         <span className="font-bold text-slate-900 dark:text-white block">Google Drive Blueprint Backup</span>
                         <span className="text-[10px] text-slate-400 block">Deploy settings and history backups to connected accounts securely.</span>
@@ -536,12 +527,12 @@ export default function SettingsTab({
                         }}
                         className="text-blue-600"
                       >
-                        {gdriveSync ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
+                        {gdriveSync ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
                       </button>
                     </div>
 
                     {/* Future broker integration option */}
-                    <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
+                    <div className="flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/20 p-3.5 border border-slate-200/50 dark:border-slate-805/10 rounded-2xl">
                       <div>
                         <span className="font-bold text-slate-900 dark:text-white block">Sovereign Hardware Connector</span>
                         <span className="text-[10px] text-slate-400 block">(Future Integration) Safe sign ledger options locally on your physical module.</span>
@@ -559,7 +550,7 @@ export default function SettingsTab({
                         }}
                         className="text-blue-600"
                       >
-                        {brokerFuture ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
+                        {brokerFuture ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
                       </button>
                     </div>
                   </div>
@@ -589,7 +580,7 @@ export default function SettingsTab({
                         onClick={() => setSandboxMode(!sandboxMode)}
                         className="text-blue-600"
                       >
-                        {sandboxMode ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
+                        {sandboxMode ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
                       </button>
                     </div>
 
@@ -611,7 +602,7 @@ export default function SettingsTab({
                         }}
                         className="text-blue-600"
                       >
-                        {tacticalAdvisory ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
+                        {tacticalAdvisory ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
                       </button>
                     </div>
 
@@ -625,7 +616,7 @@ export default function SettingsTab({
                         onClick={() => setExperimentalFeatures(!experimentalFeatures)}
                         className="text-blue-600"
                       >
-                        {experimentalFeatures ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-450" />}
+                        {experimentalFeatures ? <ToggleRight size={28} /> : <ToggleLeft size={28} className="text-slate-455" />}
                       </button>
                     </div>
                   </div>
