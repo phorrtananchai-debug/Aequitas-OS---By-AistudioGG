@@ -4,14 +4,13 @@ import {
   TrendingUp, 
   Layers, 
   Gauge, 
-  Filter, 
   Download, 
   Zap, 
-  AlertTriangle,
   Play,
   RotateCcw
 } from 'lucide-react';
 import { SimulationRun, StrategyArchetype, AlertItem, LabsSuggestion } from '../types';
+import { safeToFixed } from '../core/utils';
 
 interface StrategyProps {
   searchQuery: string;
@@ -71,6 +70,8 @@ export default function StrategyTab({
   const [nodeDetails, setNodeDetails] = useState<string | null>('Hover on neural node to trace connection...');
   const [alertFilter, setAlertFilter] = useState<string>('all');
 
+  const safeSimulations = Array.isArray(simulations) ? simulations : [];
+
   // Simulated live sync ticking
   const [isSyncing, setIsSyncing] = useState(true);
 
@@ -79,7 +80,8 @@ export default function StrategyTab({
       // randomly tick confidence slightly or shake nodes
       setConfidence(prev => {
         const diff = (Math.random() - 0.5) * 0.2;
-        return parseFloat(Math.min(100, Math.max(95, prev + diff)).toFixed(2));
+        const next = prev + diff;
+        return Number.isFinite(next) ? parseFloat(Math.min(100, Math.max(95, next)).toFixed(2)) : 99.8;
       });
     }, 4000);
     return () => clearInterval(interval);
@@ -97,22 +99,26 @@ export default function StrategyTab({
   };
 
   // Filter runs by selected archetype or search query
-  const filteredRuns = simulations.filter(run => {
+  const filteredRuns = safeSimulations.filter(run => {
+    if (!run) return false;
+    const sName = run.strategyName || '';
+    const sId = run.id || '';
+    const sStatus = run.status || '';
     const matchesSearch = 
-      run.strategyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      run.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      run.status.toLowerCase().includes(searchQuery.toLowerCase());
+      sName.toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      sId.toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      sStatus.toLowerCase().includes((searchQuery || '').toLowerCase());
     
     if (!selectedArchetype) return matchesSearch;
     
     if (selectedArchetype === 'momentum') {
-      return matchesSearch && run.strategyName.toLowerCase().includes('momentum');
+      return matchesSearch && sName.toLowerCase().includes('momentum');
     } else if (selectedArchetype === 'mean-rev') {
-      return matchesSearch && run.strategyName.toLowerCase().includes('mean');
+      return matchesSearch && sName.toLowerCase().includes('mean');
     } else if (selectedArchetype === 'delta-neutral') {
-      return matchesSearch && run.strategyName.toLowerCase().includes('neutral');
+      return matchesSearch && sName.toLowerCase().includes('neutral');
     } else {
-      return matchesSearch && !run.strategyName.toLowerCase().includes('momentum') && !run.strategyName.toLowerCase().includes('mean');
+      return matchesSearch && !sName.toLowerCase().includes('momentum') && !sName.toLowerCase().includes('mean');
     }
   });
 
@@ -144,7 +150,7 @@ export default function StrategyTab({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Central Neural Intelligence mapping */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 min-h-[420px] flex flex-col relative overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 min-h-[420px] flex flex-col relative overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <div className="relative z-10">
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -264,7 +270,7 @@ export default function StrategyTab({
             </div>
 
             {/* Slider for parameter tuning */}
-            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white border border-slate-100 p-4 rounded-xl dark:bg-slate-900/10 dark:border-slate-800/10 shadow-sm">
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-between items-center bg-white border border-slate-100 p-4 rounded-xl dark:bg-slate-900/10 dark:border-slate-800/10 shadow-sm text-slate-800">
               <div className="flex items-center gap-3 w-full sm:w-auto">
                 <Zap size={15} className="text-amber-500 shrink-0 select-none" />
                 <span className="text-xs font-bold whitespace-nowrap text-slate-705">Investment Alignment Rating:</span>
@@ -294,7 +300,7 @@ export default function StrategyTab({
         </div>
 
         {/* Supplementary Alert Rail: Theme Guidance */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 flex flex-col shadow-sm max-h-[460px] border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 flex flex-col shadow-sm max-h-[460px] border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Theme Guidance List</h3>
             <Zap size={16} className="text-blue-600 dark:text-blue-400 animate-pulse" />
@@ -473,7 +479,7 @@ export default function StrategyTab({
       </section>
 
       {/* Simulation Environment Table */}
-      <section className="glass-panel rounded-3xl overflow-hidden shadow-sm">
+      <section className="glass-panel rounded-3xl overflow-hidden shadow-sm bg-white text-slate-800">
         
         {/* Table Controls */}
         <div className="p-5 border-b border-white/20 dark:border-slate-800/10 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-slate-500/5">
@@ -533,7 +539,7 @@ export default function StrategyTab({
 
                     <td className="px-6 py-4 shadow-none">
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs font-bold w-10 text-slate-800 dark:text-slate-200">{run.modelAccuracy.toFixed(1)}%</span>
+                        <span className="font-mono text-xs font-bold w-10 text-slate-800 dark:text-slate-200">{safeToFixed(run.modelAccuracy, 1)}%</span>
                         <div className="w-20 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shrink-0 font-sans">
                           <div 
                             className="h-full bg-blue-600 dark:bg-blue-500 transition-all duration-1000" 
@@ -544,11 +550,11 @@ export default function StrategyTab({
                     </td>
 
                     <td className="px-6 py-4 font-mono font-bold text-xs text-slate-500 dark:text-rose-450">
-                      {Math.abs(run.maxDrawdown).toFixed(2)}%
+                      {safeToFixed(Math.abs(run.maxDrawdown), 2)}%
                     </td>
 
                     <td className="px-6 py-4 font-mono font-extrabold text-sm text-emerald-600 dark:text-emerald-400">
-                      +{run.projApy.toFixed(1)}%
+                      +{safeToFixed(run.projApy, 1)}%
                     </td>
 
                     <td className="px-6 py-4">

@@ -1,15 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
-  Brain, 
   Send, 
   Sparkles, 
-  TrendingUp, 
-  Compass, 
-  Workflow, 
+  Brain,
   AlertCircle 
 } from 'lucide-react';
 import { ChatMessage, AlertItem, Holding, DailyBrief } from '../types';
-import { calculatePortfolioDrift, calculateDividendStats, calculateLayerStats } from '../core/utils';
+import { calculatePortfolioDrift, calculateDividendStats, calculateLayerStats, safeToLocaleString } from '../core/utils';
 
 interface AIInsightsProps {
   onTriggerAlert: (alert: Omit<AlertItem, 'id' | 'time'>) => void;
@@ -24,7 +21,7 @@ const TEMPLATE_SUGGESTIONS = [
   { text: 'How does compounding passive dividend reinvestments work here?', topic: 'dividends' },
 ];
 
-export default function AIInsightsTab({ onTriggerAlert, holdings, dailyBrief, aiImportStatus }: AIInsightsProps) {
+export default function AIInsightsTab({ onTriggerAlert, holdings, dailyBrief }: AIInsightsProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'init',
@@ -37,9 +34,10 @@ export default function AIInsightsTab({ onTriggerAlert, holdings, dailyBrief, ai
   const [isTyping, setIsTyping] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
-  const drift = calculatePortfolioDrift(holdings);
-  const divStats = calculateDividendStats(holdings);
-  const layerStats = calculateLayerStats(holdings);
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const drift = calculatePortfolioDrift(safeHoldings);
+  const divStats = calculateDividendStats(safeHoldings);
+  const layerStats = calculateLayerStats(safeHoldings);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -80,14 +78,14 @@ Reconciling Thai Retirement Mutual Funds (RMF) and Super Savings Funds (SSF) und
         aiResponseText = `### Portfolio Drift & Volatility Vector Audit
 
 Evaluating target weight boundaries across your structural portfolios:
-* **Growth Equities**: Currently at **${growthLayer?.pct}%** vs a target range cap of **${growthLayer?.target}%**.
-* **Core S&P 500 ETF**: Currently at **${coreLayer?.pct}%** vs a target of **${coreLayer?.target}%**.
+* **Growth Equities**: Currently at **${growthLayer?.pct ?? 0}%** vs a target range cap of **${growthLayer?.target ?? 0}%**.
+* **Core S&P 500 ETF**: Currently at **${coreLayer?.pct ?? 0}%** vs a target of **${coreLayer?.target ?? 0}%**.
 * **Calm Rebalancing Suggestion**: Under the Aequitas philosophy, we do NOT execute sudden liquidations. Redirect the next consecutive **Monthly DCA contributions** to underweight layers to naturally compress drifts without tax costs. Total weighted drift is currently **${drift}%**.`;
       } else if (promptLower.includes('dividend') || promptLower.includes('passive') || promptLower.includes('compound')) {
         aiResponseText = `### Passive Dividend Stream & Liquidity Compound Engine
 
 Analyzing yield metrics from passive income holdings:
-* **Current Yield Runrate**: Monthly average cash flows are configured at **$${divStats.monthlyEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}** ($${divStats.annualEst.toLocaleString(undefined, { maximumFractionDigits: 0 })} annualized).
+* **Current Yield Runrate**: Monthly average cash flows are configured at **$${safeToLocaleString(divStats.monthlyEst, { maximumFractionDigits: 0 })}** ($${safeToLocaleString(divStats.annualEst, { maximumFractionDigits: 0 })} annualized).
 * **Compounding Schedule**: Income distributions are held in cash buffer layers automatically. 
 * **Optimized Contribution Rules**: Allocating these dividends directly to your Standard ETF DCA plans (e.g. VOO) rather than spot withdrawals amplifies share accumulation curves. Current weighted APY is **${divStats.weightedApy}%**.`;
       } else {
@@ -140,7 +138,7 @@ Based on live local parameters:
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Active chat screen (8 columns mapping) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 shadow-sm flex flex-col border border-slate-205/60 dark:border-slate-800/25 bg-white">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 shadow-sm flex flex-col border border-slate-205/60 dark:border-slate-800/25 bg-white text-slate-800">
           
           {/* Messages feed */}
           <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
@@ -226,14 +224,14 @@ Based on live local parameters:
               onClick={() => handleSend(inputText)}
               className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl aspect-square flex items-center justify-center p-3 font-semibold hover:shadow-lg transition-all shadow-blue-500/10 w-12 shrink-0 cursor-pointer"
             >
-              <Send size={15} />
+              <Sparkles size={15} />
             </button>
           </div>
 
         </div>
 
         {/* Local parameter specs sidebar info panels (4 columns mapping) */}
-        <div className="lg:col-span-4 space-y-4 shrink-0 flex flex-col justify-between">
+        <div className="lg:col-span-4 space-y-4 shrink-0 flex flex-col justify-between text-slate-800">
           
           <div className="glass-panel p-5 rounded-3xl border border-slate-205/60 dark:border-slate-800/25 bg-white flex-1 space-y-4">
             <div>
@@ -261,7 +259,7 @@ Based on live local parameters:
           </div>
 
           {/* Secure advisory disclaimer */}
-          <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-100/40 text-[11px] leading-relaxed text-slate-500 dark:bg-amber-950/10 dark:border-amber-800/20">
+          <div className="p-4 rounded-2xl bg-amber-50/40 border border-amber-100/40 text-[11px] leading-relaxed text-slate-500 dark:bg-amber-950/10 dark:border-amber-808/20">
             <div className="flex gap-2 items-start text-amber-800/80">
               <AlertCircle size={15} className="shrink-0 mt-0.5" />
               <p className="font-medium">

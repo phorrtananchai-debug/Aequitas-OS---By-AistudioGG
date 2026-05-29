@@ -1,21 +1,12 @@
 import React, { useState } from 'react';
 import { 
-  Plus, 
-  Search, 
-  Layers, 
+  Edit3,
   Globe, 
-  Calculator, 
-  Calendar, 
-  ArrowUpRight, 
   Check, 
-  TrendingUp, 
-  Edit3, 
-  CheckCircle2,
-  RefreshCw,
-  Sliders,
-  AlertCircle
+  Plus
 } from 'lucide-react';
 import { Holding, ThaiFundNavState, AlertItem } from '../types';
+import { safeToFixed, safeToLocaleString } from '../core/utils';
 
 interface HoldingsTabProps {
   searchQuery: string;
@@ -47,11 +38,15 @@ export default function MarketsTab({
   const [updatingThaiTicker, setUpdatingThaiTicker] = useState<string | null>(null);
   const [thaiNavInput, setThaiNavInput] = useState<string>('');
 
+  const safeHoldings = Array.isArray(holdings) ? holdings : [];
+  const safeThaiNavs = Array.isArray(thaiFundNavs) ? thaiFundNavs : [];
+
   const handleStartEdit = (h: Holding) => {
+    if (!h) return;
     setEditingId(h.id);
-    setEditUnits(h.units.toString());
-    setEditAvgCost(h.avgCost.toString());
-    setEditPrice(h.currentPrice.toString());
+    setEditUnits((h.units ?? 0).toString());
+    setEditAvgCost((h.avgCost ?? 0).toString());
+    setEditPrice((h.currentPrice ?? 0).toString());
     setEditNotes(h.notes || '');
   };
 
@@ -75,8 +70,8 @@ export default function MarketsTab({
     const calculatedGain = valueCalculated - initialCostVal;
     const gainPct = initialCostVal > 0 ? (calculatedGain / initialCostVal) * 100 : 0;
 
-    const nextHoldings = holdings.map(h => {
-      if (h.id === id) {
+    const nextHoldings = safeHoldings.map(h => {
+      if (h && h.id === id) {
         return {
           ...h,
           units: unitsVal,
@@ -92,10 +87,10 @@ export default function MarketsTab({
     });
 
     // Re-tweak percentages based on next total sum
-    const totalSum = nextHoldings.reduce((sum, current) => sum + current.value, 0);
+    const totalSum = nextHoldings.reduce((sum, current) => sum + (current?.value || 0), 0);
     const finalizedHoldings = nextHoldings.map(h => ({
       ...h,
-      allocationPct: parseFloat(((h.value / totalSum) * 100).toFixed(2))
+      allocationPct: totalSum > 0 ? parseFloat((( (h?.value || 0) / totalSum) * 100).toFixed(2)) : 0
     }));
 
     onUpdateHoldings(finalizedHoldings);
@@ -110,9 +105,9 @@ export default function MarketsTab({
 
   const handleTriggerThaiNavUpdate = (ticker: string) => {
     setUpdatingThaiTicker(ticker);
-    const match = thaiFundNavs.find(f => f.ticker === ticker);
+    const match = safeThaiNavs.find(f => f && f.ticker === ticker);
     if (match) {
-      setThaiNavInput(match.nav.toString());
+      setThaiNavInput((match.nav ?? 0).toString());
     }
   };
 
@@ -121,8 +116,8 @@ export default function MarketsTab({
     if (isNaN(navVal) || navVal <= 0) return;
 
     // 1. Update Thai Fund NAV Bridge
-    const nextNavs = thaiFundNavs.map(f => {
-      if (f.ticker === ticker) {
+    const nextNavs = safeThaiNavs.map(f => {
+      if (f && f.ticker === ticker) {
         return { ...f, nav: navVal, lastUpdated: new Date().toISOString().split('T')[0], isStale: false };
       }
       return f;
@@ -130,11 +125,11 @@ export default function MarketsTab({
     onUpdateThaiFundNavs(nextNavs);
 
     // 2. Cascade changes back to holdings asset values
-    const matchNav = nextNavs.find(f => f.ticker === ticker);
-    const nextHoldings = holdings.map(h => {
-      if (h.ticker === ticker && matchNav) {
-        const nextValue = h.units * navVal;
-        const totalCostAndBasis = h.units * h.avgCost;
+    const matchNav = nextNavs.find(f => f && f.ticker === ticker);
+    const nextHoldings = safeHoldings.map(h => {
+      if (h && h.ticker === ticker && matchNav) {
+        const nextValue = (h.units ?? 0) * navVal;
+        const totalCostAndBasis = (h.units ?? 0) * (h.avgCost ?? 0);
         const calculatedGain = nextValue - totalCostAndBasis;
         const gainPct = totalCostAndBasis > 0 ? (calculatedGain / totalCostAndBasis) * 100 : 0;
         return {
@@ -148,10 +143,10 @@ export default function MarketsTab({
       return h;
     });
 
-    const totalSum = nextHoldings.reduce((sum, current) => sum + current.value, 0);
+    const totalSum = nextHoldings.reduce((sum, current) => sum + (current?.value || 0), 0);
     const finalHoldings = nextHoldings.map(h => ({
       ...h,
-      allocationPct: totalSum > 0 ? parseFloat(((h.value / totalSum) * 100).toFixed(2)) : 0
+      allocationPct: totalSum > 0 ? parseFloat((( (h?.value || 0) / totalSum) * 100).toFixed(2)) : 0
     }));
 
     onUpdateHoldings(finalHoldings);
@@ -172,17 +167,18 @@ export default function MarketsTab({
     { id: 'cash', label: 'Cash & Others' }
   ];
 
-  const filteredHoldings = holdings.filter(h => {
+  const filteredHoldings = safeHoldings.filter(h => {
+    if (!h) return false;
     const matchesSearch = 
-      h.ticker.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      h.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (h.notes && h.notes.toLowerCase().includes(searchQuery.toLowerCase()));
+      (h.ticker || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (h.name || '').toLowerCase().includes((searchQuery || '').toLowerCase()) ||
+      (h.notes && h.notes.toLowerCase().includes((searchQuery || '').toLowerCase()));
     
     if (filterType === 'all') return matchesSearch;
     if (filterType === 'cash') {
       return matchesSearch && (h.type === 'Cash' || h.type === 'Sandbox Asset');
     }
-    return matchesSearch && h.type.toLowerCase() === filterType;
+    return matchesSearch && (h.type || '').toLowerCase() === filterType;
   });
 
   return (
@@ -197,7 +193,7 @@ export default function MarketsTab({
           <h2 className="font-sans text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white mt-1">
             Manual Asset Ledger
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-2xl leading-relaxed">
             Audit and manually update position sizes, historical average costs, or custom mutual fund price benchmarks. Zero third-party tracker hooks required.
           </p>
         </div>
@@ -219,13 +215,17 @@ export default function MarketsTab({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-          {thaiFundNavs.map(fund => (
+          {safeThaiNavs.length === 0 ? (
+             <div className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 text-xs text-slate-400">
+               No Thai funds configured in active ledger.
+             </div>
+          ) : safeThaiNavs.map(fund => (
             <div key={fund.ticker} className="p-4 rounded-2xl bg-slate-900/40 border border-slate-800/80 flex justify-between items-center hover:border-slate-700 transition-colors">
               <div>
                 <span className="text-[10px] uppercase font-bold text-slate-500">{fund.ticker}</span>
                 <h4 className="text-xs font-semibold text-slate-200 mt-0.5">{fund.name}</h4>
                 <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1.5 font-mono">
-                  <span>Last Reconciled: {fund.lastUpdated}</span>
+                  <span>Last Reconciled: {fund.lastUpdated || 'Never'}</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 </p>
               </div>
@@ -249,7 +249,7 @@ export default function MarketsTab({
                   </div>
                 ) : (
                   <>
-                    <span className="text-base font-bold font-mono text-emerald-400">{fund.nav.toFixed(2)} THB</span>
+                    <span className="text-base font-bold font-mono text-emerald-400">{safeToFixed(fund.nav, 2)} THB</span>
                     <button 
                       onClick={() => handleTriggerThaiNavUpdate(fund.ticker)}
                       className="text-[10px] font-bold text-blue-400 hover:underline bg-transparent"
@@ -301,15 +301,17 @@ export default function MarketsTab({
                 <th className="px-6 py-4 text-center">ACTIONS</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-850/40 text-xs font-sans">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-850/40 text-xs font-sans text-slate-800">
               {filteredHoldings.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-12 text-center text-xs text-slate-400">No core assets found matching active filter.</td>
                 </tr>
               ) : (
                 filteredHoldings.map((h) => {
+                  if (!h) return null;
                   const isEditing = editingId === h.id;
-                  const isGain = h.gainLoss >= 0;
+                  const gainLoss = h.gainLoss || 0;
+                  const isGain = gainLoss >= 0;
                   return (
                     <tr key={h.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/20 transition-colors">
                       <td className="px-6 py-4 font-mono font-bold text-blue-600 dark:text-blue-400">{h.ticker}</td>
@@ -337,7 +339,7 @@ export default function MarketsTab({
                             className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
                         ) : (
-                          h.units.toLocaleString(undefined, { maximumFractionDigits: 2 })
+                          safeToLocaleString(h.units, { maximumFractionDigits: 2 })
                         )}
                       </td>
 
@@ -351,7 +353,7 @@ export default function MarketsTab({
                             className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
                         ) : (
-                          `$${h.avgCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                          `$${safeToLocaleString(h.avgCost, { minimumFractionDigits: 2 })}`
                         )}
                       </td>
 
@@ -365,21 +367,21 @@ export default function MarketsTab({
                             className="p-1 px-1.5 rounded-lg border border-slate-200 bg-slate-50 w-20 text-right font-mono"
                           />
                         ) : (
-                          `$${h.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                          `$${safeToLocaleString(h.currentPrice, { minimumFractionDigits: 2 })}`
                         )}
                       </td>
 
                       {/* Computed Subtotal Value */}
                       <td className="px-6 py-4 text-right">
-                        <span className="font-mono font-bold text-slate-900 dark:text-white">${h.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="font-mono font-bold text-slate-900 dark:text-white">${safeToLocaleString(h.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         <span className={`block font-mono text-[9px] uppercase font-semibold mt-0.5 ${isGain ? 'text-emerald-650' : 'text-rose-600'}`}>
-                          {isGain ? '▲' : '▼'} {isGain ? '+' : ''}{h.gainLossPct}%
+                          {isGain ? '▲' : '▼'} {isGain ? '+' : ''}{safeToFixed(h.gainLossPct, 2)}%
                         </span>
                       </td>
 
                       {/* Allocation percentage weights */}
                       <td className="px-6 py-4 text-center font-mono font-bold text-slate-850 dark:text-slate-300">
-                        {h.allocationPct.toFixed(2)}%
+                        {safeToFixed(h.allocationPct, 2)}%
                       </td>
 
                       {/* Action tools */}

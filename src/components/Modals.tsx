@@ -88,12 +88,12 @@ export default function Modals({
     if (tradeAmount <= 0) return;
 
     const cost = tradeAmount * tradePrice;
-    if (tradeType === 'BUY' && cost > portfolioValue) {
+    if (tradeType === 'BUY' && cost > (portfolioValue || 0)) {
       onTriggerAlert({
         type: 'high',
         typeLabel: 'CLEARING ERROR',
         title: 'Insufficient Cash Collateral',
-        description: `Your order size ($${cost.toLocaleString()}) exceeds active ledger cache limits ($${portfolioValue.toLocaleString()}).`
+        description: `Your order size ($${cost.toLocaleString()}) exceeds active ledger cache limits ($${(portfolioValue || 0).toLocaleString()}).`
       });
       return;
     }
@@ -162,7 +162,7 @@ export default function Modals({
       type: 'success',
       typeLabel: 'CONFIG UPDATED',
       title: 'Reserves Limits Set',
-      description: `Active core portfolio ledger total value adjusted to $${inputVal.toLocaleString()} safely.`
+        description: `Active core portfolio ledger total value adjusted to $${(inputVal || 0).toLocaleString()} safely.`
     });
     onCloseSettingsModal();
   };
