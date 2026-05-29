@@ -13,7 +13,8 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react';
-import { TabType, DailyBrief } from '../types';
+import { TabType, DailyBrief, Holding } from '../types';
+import { calculateLayerStats, calculateDividendStats } from '../core/utils';
 
 interface OverviewProps {
   portfolioValue: number;
@@ -24,6 +25,7 @@ interface OverviewProps {
   dcaTarget: number;
   cashAvailable: number;
   dividendMonthly: number;
+  holdings: Holding[];
 }
 
 export default function OverviewTab({
@@ -34,14 +36,18 @@ export default function OverviewTab({
   dailyBrief,
   dcaTarget,
   cashAvailable,
-  dividendMonthly
+  dividendMonthly,
+  holdings
 }: OverviewProps) {
   
+  const layerStats = calculateLayerStats(holdings);
+  const divStats = calculateDividendStats(holdings);
+
   const stats = [
     { title: 'Total Portfolio Value', value: `$${portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, change: 'Steady', isPositive: true, icon: BarChart3, color: 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/20' },
     { title: 'Portfolio Health Rating', value: `${healthScore.toFixed(1)}%`, change: 'Optimal', isPositive: true, icon: ShieldCheck, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/80 dark:bg-emerald-950/20' },
     { title: 'Target Monthly DCA', value: `$${dcaTarget.toLocaleString()}`, change: 'Plan Configured', isPositive: true, icon: Calendar, color: 'text-amber-600 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/20' },
-    { title: 'Dividends (Monthly Est.)', value: `$${dividendMonthly.toLocaleString()}`, change: 'Passive Income', isPositive: true, icon: TrendingUp, color: 'text-purple-650 dark:text-purple-400 bg-purple-50/80 dark:bg-purple-950/20' },
+    { title: 'Dividends (Monthly Est.)', value: `$${divStats.monthlyEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, change: 'Passive Income', isPositive: true, icon: TrendingUp, color: 'text-purple-650 dark:text-purple-400 bg-purple-50/80 dark:bg-purple-950/20' },
   ];
 
   return (
@@ -196,45 +202,17 @@ export default function OverviewTab({
 
             {/* Visual ratio bar */}
             <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-2">
-                  <span className="text-slate-550 dark:text-slate-300">Core ETF Layer (VOO, K-US500X, SCHD)</span>
-                  <span className="font-mono text-slate-900 dark:text-white">31.7% <span className="text-slate-400 font-light">/ Goal: 35%</span></span>
+              {layerStats.layers.filter(l => l.name !== 'Sandbox Layer').map(layer => (
+                <div key={layer.name}>
+                  <div className="flex justify-between text-xs font-semibold mb-2">
+                    <span className="text-slate-550 dark:text-slate-300">{layer.name}</span>
+                    <span className="font-mono text-slate-900 dark:text-white">{layer.pct}% <span className="text-slate-400 font-light">/ Goal: {layer.target}%</span></span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div className={`h-full ${layer.color}`} style={{ width: `${layer.pct}%` }} />
+                  </div>
                 </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-600 dark:bg-blue-550" style={{ width: '31.7%' }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-2">
-                  <span className="text-slate-550 dark:text-slate-300">Growth Layer (MSFT, GOOGL, NVDA, AVGO, etc.)</span>
-                  <span className="font-mono text-slate-900 dark:text-white">44.3% <span className="text-slate-400 font-light">/ Goal: 40%</span></span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 dark:bg-emerald-400" style={{ width: '44.3%' }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-2">
-                  <span className="text-slate-550 dark:text-slate-300">Thai Tax Wrapper Layer (K-US500XRMF)</span>
-                  <span className="font-mono text-slate-900 dark:text-white">12.4% <span className="text-slate-400 font-light">/ Goal: 10%</span></span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-600" style={{ width: '12.4%' }} />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-2">
-                  <span className="text-slate-550 dark:text-slate-300">Dividend / Income Layer (JEPQ, ABBV)</span>
-                  <span className="font-mono text-slate-900 dark:text-white">8.5% <span className="text-slate-400 font-light">/ Goal: 10%</span></span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500" style={{ width: '8.5%' }} />
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 

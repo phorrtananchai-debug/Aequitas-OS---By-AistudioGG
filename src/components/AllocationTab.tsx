@@ -24,14 +24,6 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
     return defaultVal;
   };
 
-  const allocations = [
-    { ticker: 'CORE', name: 'Core ETF Layer', target: getTargetPct('Core ETF Layer', 35), current: layerStats.core.pct, color: 'bg-blue-600', text: 'text-blue-650' },
-    { ticker: 'GROWTH', name: 'Growth Layer', target: getTargetPct('Growth Layer', 35), current: layerStats.growth.pct, color: 'bg-indigo-600', text: 'text-indigo-600' },
-    { ticker: 'DIVIDEND', name: 'Dividend / Behavior Layer', target: getTargetPct('Dividend / Behavior Layer', 15), current: layerStats.dividend.pct, color: 'bg-emerald-600', text: 'text-emerald-600' },
-    { ticker: 'TAX_WRAP', name: 'Thai Tax Wrapper Layer', target: getTargetPct('Thai Tax Wrapper Layer', 12), current: layerStats.tax.pct, color: 'bg-amber-600', text: 'text-amber-600' },
-    { ticker: 'SANDBOX', name: 'Sandbox Layer', target: getTargetPct('Sandbox Layer', 3), current: layerStats.sandbox.pct, color: 'bg-purple-600', text: 'text-purple-600' },
-  ];
-
   const handleSyncLimits = () => {
     setIsSyncing(true);
     setTimeout(() => {
@@ -85,7 +77,7 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Allocations & Targets List (8 Columns) */}
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 relative shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
           <div>
             <div className="flex justify-between items-start pb-4 border-b border-slate-100 dark:border-slate-800/45 mb-6">
               <div>
@@ -103,26 +95,27 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
             </div>
 
             <div className="space-y-6">
-              {allocations.map((alloc) => {
-                const driftVal = Math.abs(alloc.current - alloc.target);
+              {layerStats.layers.map((alloc) => {
+                const target = getTargetPct(alloc.name, alloc.target);
+                const driftVal = Math.abs(alloc.pct - target);
                 return (
-                  <div key={alloc.ticker} className="space-y-2">
+                  <div key={alloc.name} className="space-y-2">
                     <div className="flex justify-between text-xs font-semibold">
                       <div className="flex items-center gap-2">
                         <span className={`w-2.5 h-2.5 rounded-full ${alloc.color}`} />
-                        <span className="text-slate-805 font-bold dark:text-slate-200">{alloc.ticker} ({alloc.name})</span>
+                        <span className="text-slate-805 font-bold dark:text-slate-200">{alloc.name}</span>
                       </div>
                       <span className="font-mono text-slate-900 dark:text-white">
-                        {alloc.current}% <span className="text-slate-400 font-normal">/ {alloc.target}% target</span>
+                        {alloc.pct}% <span className="text-slate-400 font-normal">/ {target}% target</span>
                       </span>
                     </div>
 
                     <div className="flex gap-2">
                       <div className="flex-grow h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
-                        <div className={`h-full ${alloc.color}`} style={{ width: `${alloc.current}%` }} />
+                        <div className={`h-full ${alloc.color}`} style={{ width: `${alloc.pct}%` }} />
                       </div>
                       <span className="font-mono text-[9px] font-black uppercase text-emerald-600 shrink-0">
-                        {driftVal === 0 ? 'Aligned' : `Drift: ${driftVal.toFixed(1)}%`}
+                        {driftVal < 0.1 ? 'Aligned' : `Drift: ${driftVal.toFixed(1)}%`}
                       </span>
                     </div>
                   </div>
@@ -138,7 +131,7 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
         </div>
 
         {/* Drift Adjuster Pane (4 Columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
           <div className="space-y-6">
             <div>
               <span className="text-[10px] uppercase font-black tracking-wider text-blue-600 dark:text-blue-400">

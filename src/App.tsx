@@ -33,6 +33,8 @@ import SettingsTab from './components/SettingsTab';
 import AIWorkflowTab from './components/AIWorkflowTab';
 import SnapshotsTab from './components/SnapshotsTab';
 
+import { calculatePortfolioDrift, calculatePortfolioHealth, calculateDividendStats } from './core/utils';
+
 // Initial Mock Datasets
 const INITIAL_NOTIFICATION_QUEUE: AlertItem[] = [
   {
@@ -388,12 +390,13 @@ export default function App() {
             <OverviewTab 
               portfolioValue={portfolioValue} 
               setActiveTab={setActiveTab}
-              healthScore={latestAiImportPlan?.portfolioSummary?.portfolioHealth ?? 94.8}
-              driftPct={latestAiImportPlan?.portfolioSummary?.allocationDriftPct ?? 3.2}
+              healthScore={calculatePortfolioHealth(holdings)}
+              driftPct={calculatePortfolioDrift(holdings)}
               dailyBrief={dailyBrief}
               dcaTarget={dcaPlan.monthlyContributionPlan}
-              cashAvailable={dcaPlan.items.find(x => x.ticker === 'CASH')?.targetAmount ?? 8690}
-              dividendMonthly={dividendPlan.expectedMonthlyDividend}
+              cashAvailable={dcaPlan.cashAvailable}
+              dividendMonthly={calculateDividendStats(holdings).monthlyEst}
+              holdings={holdings}
             />
           )}
 
@@ -401,6 +404,7 @@ export default function App() {
             <DailyBriefTab 
               portfolioValue={portfolioValue}
               dailyBrief={dailyBrief}
+              holdings={holdings}
             />
           )}
 
@@ -410,6 +414,7 @@ export default function App() {
               onUpdatePortfolio={setPortfolioValue}
               onTriggerAlert={pushNotification}
               holdings={holdings}
+              dcaPlan={dcaPlan}
             />
           )}
 

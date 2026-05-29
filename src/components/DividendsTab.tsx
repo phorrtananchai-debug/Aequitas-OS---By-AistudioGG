@@ -1,21 +1,31 @@
 import { useState } from 'react';
 import { Coins, TrendingUp, Calendar, Check, ArrowUpRight, Percent, Info } from 'lucide-react';
+import { DividendPlan, Holding } from '../types';
+import { calculateDividendStats } from '../core/utils';
 
-export default function DividendsTab() {
+interface DividendsTabProps {
+  dividendPlan: DividendPlan;
+  holdings: Holding[];
+  onUpdateDividendPlan: (plan: DividendPlan) => void;
+}
+
+export default function DividendsTab({ dividendPlan, holdings, onUpdateDividendPlan }: DividendsTabProps) {
   const [compoundYears, setCompoundYears] = useState<number>(5);
   const [monthlyContribution, setMonthlyContribution] = useState<number>(1500);
 
-  const initialPrincipal = 485000;
-  const annualApy = 0.072; // 7.2% average apy
+  const stats = calculateDividendStats(holdings);
+  const portfolioValue = holdings.reduce((acc, h) => acc + (h.value || 0), 0);
 
   // Calculate compound interest
-  // A = P(1 + r/n)^(nt) + PMT * (((1 + r/n)^(nt) - 1) / (r/n)) * (1 + r/n) (assuming payments at start of period)
+  // A = P(1 + r/n)^(nt) + PMT * (((1 + r/n)^(nt) - 1) / (r/n)) * (1 + r/n)
   const calculateEstimate = () => {
-    const P = initialPrincipal;
-    const r = annualApy;
+    const P = portfolioValue;
+    const r = stats.weightedApy / 100;
     const n = 12; // compounding monthly
     const t = compoundYears;
     const PMT = monthlyContribution;
+
+    if (r === 0) return P + (PMT * 12 * t);
 
     const baseAmount = P * Math.pow(1 + r/n, n * t);
     const annuityAmount = PMT * ((Math.pow(1 + r/n, n * t) - 1) / (r/n)) * (1 + r/n);
@@ -23,12 +33,17 @@ export default function DividendsTab() {
     return Math.round(baseAmount + annuityAmount);
   };
 
-  const dividendEvents = [
-    { id: 'DIV-101', source: 'L1 Staking Yield (SOL)', amount: 480.00, frequency: 'Weekly', estimateDate: 'Jun 1, 2026', status: 'PENDING' },
-    { id: 'DIV-102', source: 'USDC Treasury Yield', amount: 350.00, frequency: 'Monthly', estimateDate: 'Jun 3, 2026', status: 'PENDING' },
-    { id: 'DIV-103', source: 'Sovereign Buffer Notes', amount: 620.00, frequency: 'Monthly', estimateDate: 'Jun 5, 2026', status: 'PENDING' },
-    { id: 'DIV-104', source: 'L2 Liquidity Provider Yield', amount: 1450.00, frequency: 'Monthly', estimateDate: 'May 20, 2026', status: 'COMPLETED' },
-  ];
+  const dividendEvents = (holdings || [])
+    .filter(h => h.dividendYield && h.dividendYield > 0)
+    .map(h => ({
+      id: `DIV-${h.ticker}`,
+      source: h.name,
+      amount: (h.value * (h.dividendYield || 0) / 100) / 4, // Simple quarterly est
+      frequency: 'Quarterly',
+      estimateDate: 'Next Cycle',
+      status: 'PENDING'
+    }))
+    .slice(0, 5);
 
   return (
     <div className="space-y-8 animate-fade-in text-slate-800 dark:text-[#F4EEE4] pb-12">
@@ -49,29 +64,29 @@ export default function DividendsTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Monthly Yield Est.</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">$3,150.00</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">${stats.monthlyEst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           <p className="text-[10px] text-emerald-600 font-bold uppercase mt-2 flex items-center gap-0.5">
-            <ArrowUpRight size={10} /> +4.2% from last cycle
+            <ArrowUpRight size={10} /> Derived from live yields
           </p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
           <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Weighted System APY</span>
-          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">7.20%</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.weightedApy.toFixed(2)}%</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Compounding active</p>
         </div>
 
         <div className="glass-panel p-6 rounded-2xl relative shadow-sm border border-slate-200/60 dark:border-slate-800/25">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Upcoming Payout Scheduled</span>
-          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">$1,450.00</span>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-450 block mb-1">Annualized Income Est.</span>
+          <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">${stats.annualEst.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
           <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 flex items-center gap-1">
-            <Calendar size={10} /> June 1, 2026
+            <Calendar size={10} /> Core projection
           </p>
         </div>
       </div>
 
       {/* Table section: Dividend Events */}
-      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25">
+      <div className="glass-panel rounded-3xl overflow-hidden shadow-sm border border-slate-205/60 dark:border-slate-800/25 bg-white">
         <div className="p-5 border-b border-slate-100 dark:border-slate-800/10 flex justify-between items-center bg-slate-500/5">
           <span className="text-xs font-bold uppercase tracking-widest text-slate-550">Compounding Ledger Log</span>
           <span className="text-[10px] uppercase font-bold text-blue-600 dark:text-blue-400 scale-90">Auto Reinvest Active</span>
@@ -114,14 +129,14 @@ export default function DividendsTab() {
 
       {/* Yield compounding calculator (Bento block) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 flex flex-col justify-between shadow-sm">
+        <div className="lg:col-span-8 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-205/60 dark:border-slate-800/25 flex flex-col justify-between shadow-sm bg-white">
           <div>
             <div className="flex gap-2 items-center text-blue-600 dark:text-blue-400 mb-2">
               <Percent size={16} />
               <span className="text-[10px] font-bold uppercase tracking-widest">Growth Estimator</span>
             </div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">compounding Target projections</h3>
-            <p className="text-xs text-slate-400 mt-1 leading-normal">
+            <p className="text-xs text-slate-450 mt-1 leading-normal">
               Adjust parameters to forecast core wealth accumulation over future cycles at active yield levels.
             </p>
 
@@ -164,21 +179,21 @@ export default function DividendsTab() {
               <span className="text-[9px] text-slate-400 uppercase font-black block tracking-widest">Projected Core Value ({compoundYears}yr)</span>
               <span className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1 block">${calculateEstimate().toLocaleString()}</span>
             </div>
-            <div className="text-[11px] text-slate-400 font-medium text-left sm:text-right max-w-sm">
-              Includes initial core balance of <strong className="text-slate-600 dark:text-slate-350">$485,000</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">7.20% APY</strong>.
+            <div className="text-[11px] text-slate-450 font-medium text-left sm:text-right max-w-sm">
+              Includes initial core balance of <strong className="text-slate-900 dark:text-slate-50">${portfolioValue.toLocaleString()}</strong> compounding continuously at historical target weighting of <strong className="text-emerald-600">{stats.weightedApy.toFixed(2)}% APY</strong>.
             </div>
           </div>
         </div>
 
         {/* Compound note informational box (4 Columns) */}
-        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25">
+        <div className="lg:col-span-4 glass-panel rounded-3xl p-6 shadow-sm flex flex-col justify-between border border-slate-205/60 dark:border-slate-800/25 bg-white">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-slate-400">
               <Info size={16} />
               <span className="text-[10px] font-bold uppercase tracking-widest">Aequitas Note</span>
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Automated Reallocation</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-450 mt-2 leading-relaxed">
               Distribution proceeds are aggregated inside the core wallet and directed back to DCA planners to buy target assets automatically. This reduces manual transactions and keeps allocations aligned.
             </p>
           </div>
