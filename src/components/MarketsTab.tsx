@@ -28,7 +28,7 @@ interface HoldingsTabProps {
   onUpdateThaiFundNavs: (nextNavs: ThaiFundNavState[]) => void;
 }
 
-type SortKey = 'ticker' | 'value' | 'allocationPct' | 'gainLossPct' | 'gainLoss' | 'type';
+type SortKey = 'ticker' | 'value' | 'percent' | 'gainLossPercent' | 'gainLoss' | 'type';
 
 export default function MarketsTab({
   searchQuery,
@@ -107,7 +107,7 @@ export default function MarketsTab({
           currentPrice: currentPriceVal,
           value: parseFloat(valueCalculated.toFixed(2)),
           gainLoss: parseFloat(calculatedGain.toFixed(2)),
-          gainLossPct: parseFloat(gainPct.toFixed(2)),
+          gainLossPercent: parseFloat(gainPct.toFixed(2)),
           notes: editNotes,
           type: editType
         };
@@ -146,8 +146,8 @@ export default function MarketsTab({
       currentPrice: price,
       value: parseFloat(value.toFixed(2)),
       gainLoss: parseFloat(gainLoss.toFixed(2)),
-      gainLossPct: parseFloat(gainLossPct.toFixed(2)),
-      allocationPct: 0, // Recalculated below
+      gainLossPercent: parseFloat(gainLossPct.toFixed(2)),
+      percent: 0, // Recalculated below
       notes: newAsset.notes
     };
 
@@ -179,7 +179,7 @@ export default function MarketsTab({
     const totalSum = nextHoldings.reduce((sum, h) => sum + (h?.value || 0), 0);
     const finalized = nextHoldings.map(h => ({
       ...h,
-      allocationPct: totalSum > 0 ? parseFloat((( (h?.value || 0) / totalSum) * 100).toFixed(2)) : 0
+      percent: totalSum > 0 ? parseFloat((( (h?.value || 0) / totalSum) * 100).toFixed(2)) : 0
     }));
     onUpdateHoldings(finalized);
   };
@@ -218,7 +218,7 @@ export default function MarketsTab({
           currentPrice: navVal,
           value: parseFloat(nextValue.toFixed(2)),
           gainLoss: parseFloat(calculatedGain.toFixed(2)),
-          gainLossPct: parseFloat(gainPct.toFixed(2))
+          gainLossPercent: parseFloat(gainPct.toFixed(2))
         };
       }
       return h;
@@ -285,7 +285,7 @@ export default function MarketsTab({
   const totalValue = safeHoldings.reduce((sum, h) => sum + (h?.value || 0), 0);
   const totalGain = safeHoldings.reduce((sum, h) => sum + (h?.gainLoss || 0), 0);
   const avgGainPct = totalValue > 0 ? (totalGain / (totalValue - totalGain)) * 100 : 0;
-  const topPerformer = [...safeHoldings].sort((a, b) => (b.gainLossPct || 0) - (a.gainLossPct || 0))[0];
+  const topPerformer = [...safeHoldings].sort((a, b) => (b.gainLossPercent || 0) - (a.gainLossPercent || 0))[0];
 
   const AssetTypes: AssetType[] = ['US Stock', 'US ETF', 'Thai Mutual Fund', 'Thai RMF', 'Dividend ETF', 'Sandbox Asset', 'Cash'];
 
@@ -339,7 +339,7 @@ export default function MarketsTab({
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Top Performer</span>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-black text-blue-600">{topPerformer?.ticker || 'N/A'}</span>
-            <span className="text-xs font-bold text-emerald-500">+{safeToFixed(topPerformer?.gainLossPct, 1)}%</span>
+            <span className="text-xs font-bold text-emerald-500">+{safeToFixed(topPerformer?.gainLossPercent, 1)}%</span>
           </div>
         </div>
       </div>
@@ -448,10 +448,10 @@ export default function MarketsTab({
                 <th className="px-6 py-4 font-mono text-right cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('value')}>
                   <div className="flex items-center justify-end gap-1.5">SUBTOTAL <ArrowUpDown size={10} /></div>
                 </th>
-                <th className="px-6 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('allocationPct')}>
+                <th className="px-6 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('percent')}>
                   <div className="flex items-center justify-center gap-1.5">ALLOC % <ArrowUpDown size={10} /></div>
                 </th>
-                <th className="px-6 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('gainLossPct')}>
+                <th className="px-6 py-4 text-center cursor-pointer hover:text-blue-600 transition-colors" onClick={() => handleSort('gainLossPercent')}>
                   <div className="flex items-center justify-center gap-1.5">P/L % <ArrowUpDown size={10} /></div>
                 </th>
                 <th className="px-6 py-4 text-center">ACTIONS</th>
@@ -544,12 +544,12 @@ export default function MarketsTab({
 
                       {/* Allocation percentage weights */}
                       <td className="px-6 py-4 text-center font-mono font-bold text-slate-850 dark:text-slate-300">
-                        {safeToFixed(h.allocationPct, 2)}%
+                        {safeToFixed(h.percent, 2)}%
                       </td>
 
                       <td className="px-6 py-4 text-center">
                         <span className={`block font-mono text-[10px] font-black uppercase ${isGain ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {isGain ? '▲' : '▼'} {safeToFixed(Math.abs(h.gainLossPct || 0), 1)}%
+                          {isGain ? '▲' : '▼'} {safeToFixed(Math.abs(h.gainLossPercent || 0), 1)}%
                         </span>
                       </td>
 

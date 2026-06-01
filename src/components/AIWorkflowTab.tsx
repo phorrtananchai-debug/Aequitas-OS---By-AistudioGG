@@ -62,7 +62,8 @@ export default function AIWorkflowTab({
       avg_cost: h?.avgCost ?? 0,
       current_price: h?.currentPrice ?? 0,
       subtotal_value: h?.value ?? 0,
-      percent: h?.allocationPct ?? 0
+      gainLossPercent: h?.gainLossPercent ?? 0,
+      percent: h?.percent ?? 0
     })),
     monthly_dca_plan: {
       monthlyContributionPlan: dcaPlan?.monthlyContributionPlan ?? 0,

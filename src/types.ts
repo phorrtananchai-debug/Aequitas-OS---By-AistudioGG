@@ -1,5 +1,5 @@
 export type TabType = 
-  | 'dashboard' // Keep dashboard to match the active state in standard routers if selected, but label as "Dashboard Overview"
+  | 'dashboard'
   | 'dailyBrief' 
   | 'holdings' 
   | 'allocation' 
@@ -32,9 +32,9 @@ export interface Holding {
   avgCost: number;
   currentPrice: number;
   gainLoss: number;
-  gainLossPct: number;
-  allocationPct: number;
-  targetAllocationPct?: number;
+  gainLossPercent: number;
+  percent: number;
+  targetPercent?: number;
   dividendYield?: number;
   dividendType?: 'cash' | 'reinvest';
   notes?: string;
@@ -47,16 +47,16 @@ export interface PortfolioSummary {
   dividendEstimateAnnual: number;
   dividendEstimateMonthly: number;
   portfolioHealth: number; // 0-100 scale
-  allocationDriftPct: number;
+  driftPercent: number;
   lastAiSummaryDate?: string;
   reviewItemsCount: number;
 }
 
 export interface AllocationBucket {
-  name: string; // 'Core ETF Layer' | 'Growth Layer' | 'Dividend / Behavior Layer' | 'Thai Tax Wrapper Layer' | 'Sandbox Layer' | 'Cash Buffer'
-  currentPct: number;
-  targetPct: number;
-  driftPct: number;
+  name: string;
+  percent: number;
+  targetPercent: number;
+  driftPercent: number;
   value: number;
   color: string;
 }
@@ -116,7 +116,7 @@ export interface ThaiFundNavState {
 export interface AssetPlan {
   ticker: string;
   action: 'Review' | 'Consider' | 'Monitor' | 'Accumulate' | 'Hold Long-Term' | 'Reduce Overlap';
-  targetAllocationPct: number;
+  targetPercent: number;
   notes: string;
 }
 
@@ -124,12 +124,12 @@ export interface AiImportSchema {
   portfolioSummary: {
     totalValue?: number;
     portfolioHealth?: number;
-    allocationDriftPct?: number;
+    driftPercent?: number;
     reviewItemsCount?: number;
   };
   assetPlans: AssetPlan[];
   allocationPlan: {
-    buckets: { name: string; targetPct: number }[];
+    buckets: { name: string; targetPercent: number }[];
     rebalanceGuidance: string;
     priorityActions: string[];
   };
@@ -167,7 +167,7 @@ export interface Snapshot {
   timestamp: string;
   totalValue: number;
   holdingsCount: number;
-  allocationBuckets: { name: string; currentPct: number }[];
+  allocationBuckets: { name: string; percent: number }[];
   aiReviewSummary?: string;
   rawStateJson: string;
 }
@@ -247,4 +247,35 @@ export interface StrategyArchetype {
   status: string;
   risk: string;
   active?: boolean;
+}
+
+export interface MigrationCoverageReport {
+  detected: string[];
+  migrated: string[];
+  ignored: string[];
+  unsupported: string[];
+}
+
+export interface MigrationSummary {
+  holdingsCount: number;
+  totalValue: number;
+  symbols: string[];
+}
+
+export interface MigrationStatus {
+  source: 'old-local-storage' | 'new-state' | 'sample-state';
+  migratedAt: string | null;
+  detectedLegacyKeys?: string[];
+  unmappedLegacyData?: Record<string, any>;
+  coverageReport?: MigrationCoverageReport;
+  summary?: MigrationSummary;
+  success?: boolean;
+  warnings: string[];
+}
+
+export interface FinancialSettings {
+  baseCurrency: string;
+  usdThbRate: number;
+  showThbTotals: boolean;
+  preferThaiNav: boolean;
 }

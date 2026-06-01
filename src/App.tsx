@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { User } from 'firebase/auth';
 import { 
   AlertItem, 
   TabType, 
@@ -14,6 +15,7 @@ import {
   ThaiFundNavState,
   AiImportSchema
 } from './types';
+import { fetchStateFromFirestore, migrateData, saveState, AppState } from './core/storage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import OverviewTab from './components/OverviewTab';
@@ -23,6 +25,7 @@ import MarketsTab from './components/MarketsTab'; // Refactored to Holdings
 import AIInsightsTab from './components/AIInsightsTab'; // AI Advisor Workspace
 import ActivityTab from './components/ActivityTab';
 import Modals from './components/Modals';
+import AuthGate from './components/AuthGate';
 
 // Core Aequitas sub-workspace modules
 import DailyBriefTab from './components/DailyBriefTab';
@@ -56,21 +59,21 @@ const INITIAL_NOTIFICATION_QUEUE: AlertItem[] = [
 ];
 
 const INITIAL_HOLDINGS: Holding[] = [
-  { id: 'h-voo', ticker: 'VOO', name: 'Vanguard S&P 500 ETF', type: 'US ETF', value: 40000, units: 80, avgCost: 480, currentPrice: 500, gainLoss: 1600, gainLossPct: 4.17, allocationPct: 8.24, dividendYield: 1.35, dividendType: 'reinvest', notes: 'Core long-term equity compounder' },
-  { id: 'h-k500xa', ticker: 'K-US500X-A(A)', name: 'Kasikorn US Equity Index Fund', type: 'Thai Mutual Fund', value: 90000, units: 22500, avgCost: 3.8, currentPrice: 4.0, gainLoss: 4500, gainLossPct: 5.26, allocationPct: 18.55, dividendYield: 0, dividendType: 'reinvest', notes: 'S&P 500 tracker with FX hedge' },
-  { id: 'h-k500rmf', ticker: 'K-US500XRMF', name: 'Kasikorn US Equity RMF', type: 'Thai RMF', value: 60000, units: 15000, avgCost: 3.6, currentPrice: 4.0, gainLoss: 6000, gainLossPct: 11.11, allocationPct: 12.36, dividendYield: 0, dividendType: 'reinvest', notes: 'Tax protection wrapper for retirement' },
-  { id: 'h-msft', ticker: 'MSFT', name: 'Microsoft Corp.', type: 'US Stock', value: 46200, units: 110, avgCost: 400, currentPrice: 420, gainLoss: 2200, gainLossPct: 5.0, allocationPct: 9.52, dividendYield: 0.71, dividendType: 'cash', notes: 'Cloud & AI platform growth driver' },
-  { id: 'h-googl', ticker: 'GOOGL', name: 'Alphabet Inc.', type: 'US Stock', value: 30600, units: 180, avgCost: 160, currentPrice: 170, gainLoss: 1800, gainLossPct: 6.25, allocationPct: 6.31, dividendYield: 0.47, dividendType: 'cash', notes: 'AI advertising and search moat' },
-  { id: 'h-amzn', ticker: 'AMZN', name: 'Amazon.com, Inc.', type: 'US Stock', value: 27000, units: 150, avgCost: 170, currentPrice: 180, gainLoss: 1500, gainLossPct: 6.0, allocationPct: 5.56, dividendYield: 0, dividendType: 'reinvest', notes: 'E-commerce and cloud database scale leader' },
-  { id: 'h-avgo', ticker: 'AVGO', name: 'Broadcom Inc.', type: 'US Stock', value: 42000, units: 30, avgCost: 1300, currentPrice: 1400, gainLoss: 3000, gainLossPct: 7.69, allocationPct: 8.65, dividendYield: 1.5, dividendType: 'cash', notes: 'Hardware infrastructure and software giant' },
-  { id: 'h-anet', ticker: 'ANET', name: 'Arista Networks, Inc.', type: 'US Stock', value: 18000, units: 60, avgCost: 280, currentPrice: 300, gainLoss: 1200, gainLossPct: 7.14, allocationPct: 3.71, dividendYield: 0, dividendType: 'reinvest', notes: 'High-speed cloud network switches' },
-  { id: 'h-nvda', ticker: 'NVDA', name: 'NVIDIA Corporation', type: 'US Stock', value: 30400, units: 320, avgCost: 85, currentPrice: 95, gainLoss: 3200, gainLossPct: 11.76, allocationPct: 6.26, dividendYield: 0.04, dividendType: 'cash', notes: 'AI silicone and supercomputing backbone' },
-  { id: 'h-pltr', ticker: 'PLTR', name: 'Palantir Technologies', type: 'US Stock', value: 21000, units: 500, avgCost: 38, currentPrice: 42, gainLoss: 2000, gainLossPct: 10.53, allocationPct: 4.33, dividendYield: 0, dividendType: 'reinvest', notes: 'Data operating systems for enterprise & defense' },
-  { id: 'h-schd', ticker: 'SCHD', name: 'Schwab US Dividend Equity ETF', type: 'Dividend ETF', value: 24000, units: 300, avgCost: 78, currentPrice: 80, gainLoss: 600, gainLossPct: 2.56, allocationPct: 4.95, dividendYield: 3.45, dividendType: 'reinvest', notes: 'High-quality dividend compounder' },
-  { id: 'h-jepq', ticker: 'JEPQ', name: 'JPMorgan Nasdaq Equity Premium Income', type: 'Dividend ETF', value: 21600, units: 400, avgCost: 52, currentPrice: 54, gainLoss: 800, gainLossPct: 3.85, allocationPct: 4.45, dividendYield: 9.12, dividendType: 'cash', notes: 'Options-overlay high monthly income provider' },
-  { id: 'h-abbv', ticker: 'ABBV', name: 'AbbVie Inc.', type: 'US Stock', value: 19800, units: 120, avgCost: 160, currentPrice: 165, gainLoss: 600, gainLossPct: 3.12, allocationPct: 4.08, dividendYield: 3.76, dividendType: 'cash', notes: 'Dividend Aristocrat immunotherapies giant' },
-  { id: 'h-rbrk', ticker: 'RBRK', name: 'Rubrik, Inc.', type: 'Sandbox Asset', value: 6000, units: 150, avgCost: 35, currentPrice: 40, gainLoss: 750, gainLossPct: 14.28, allocationPct: 1.24, dividendYield: 0, dividendType: 'reinvest', notes: 'Labs tactical AI cloud data security sandbox asset' },
-  { id: 'h-cash', ticker: 'CASH', name: 'US Dollar Cash Buffer', type: 'Cash', value: 8690, units: 8690, avgCost: 1, currentPrice: 1, gainLoss: 0, gainLossPct: 0, allocationPct: 1.79, notes: 'Dry powder capital buffer for future monthly DCA' }
+  { id: 'h-voo', ticker: 'VOO', name: 'Vanguard S&P 500 ETF', type: 'US ETF', value: 40000, units: 80, avgCost: 480, currentPrice: 500, gainLoss: 1600, gainLossPercent: 4.17, percent: 8.24, dividendYield: 1.35, dividendType: 'reinvest', notes: 'Core long-term equity compounder' },
+  { id: 'h-k500xa', ticker: 'K-US500X-A(A)', name: 'Kasikorn US Equity Index Fund', type: 'Thai Mutual Fund', value: 90000, units: 22500, avgCost: 3.8, currentPrice: 4.0, gainLoss: 4500, gainLossPercent: 5.26, percent: 18.55, dividendYield: 0, dividendType: 'reinvest', notes: 'S&P 500 tracker with FX hedge' },
+  { id: 'h-k500rmf', ticker: 'K-US500XRMF', name: 'Kasikorn US Equity RMF', type: 'Thai RMF', value: 60000, units: 15000, avgCost: 3.6, currentPrice: 4.0, gainLoss: 6000, gainLossPercent: 11.11, percent: 12.36, dividendYield: 0, dividendType: 'reinvest', notes: 'Tax protection wrapper for retirement' },
+  { id: 'h-msft', ticker: 'MSFT', name: 'Microsoft Corp.', type: 'US Stock', value: 46200, units: 110, avgCost: 400, currentPrice: 420, gainLoss: 2200, gainLossPercent: 5.0, percent: 9.52, dividendYield: 0.71, dividendType: 'cash', notes: 'Cloud & AI platform growth driver' },
+  { id: 'h-googl', ticker: 'GOOGL', name: 'Alphabet Inc.', type: 'US Stock', value: 30600, units: 180, avgCost: 160, currentPrice: 170, gainLoss: 1800, gainLossPercent: 6.25, percent: 6.31, dividendYield: 0.47, dividendType: 'cash', notes: 'AI advertising and search moat' },
+  { id: 'h-amzn', ticker: 'AMZN', name: 'Amazon.com, Inc.', type: 'US Stock', value: 27000, units: 150, avgCost: 170, currentPrice: 180, gainLoss: 1500, gainLossPercent: 6.0, percent: 5.56, dividendYield: 0, dividendType: 'reinvest', notes: 'E-commerce and cloud database scale leader' },
+  { id: 'h-avgo', ticker: 'AVGO', name: 'Broadcom Inc.', type: 'US Stock', value: 42000, units: 30, avgCost: 1300, currentPrice: 1400, gainLoss: 3000, gainLossPercent: 7.69, percent: 8.65, dividendYield: 1.5, dividendType: 'cash', notes: 'Hardware infrastructure and software giant' },
+  { id: 'h-anet', ticker: 'ANET', name: 'Arista Networks, Inc.', type: 'US Stock', value: 18000, units: 60, avgCost: 280, currentPrice: 300, gainLoss: 1200, gainLossPercent: 7.14, percent: 3.71, dividendYield: 0, dividendType: 'reinvest', notes: 'High-speed cloud network switches' },
+  { id: 'h-nvda', ticker: 'NVDA', name: 'NVIDIA Corporation', type: 'US Stock', value: 30400, units: 320, avgCost: 85, currentPrice: 95, gainLoss: 3200, gainLossPercent: 11.76, percent: 6.26, dividendYield: 0.04, dividendType: 'cash', notes: 'AI silicone and supercomputing backbone' },
+  { id: 'h-pltr', ticker: 'PLTR', name: 'Palantir Technologies', type: 'US Stock', value: 21000, units: 500, avgCost: 38, currentPrice: 42, gainLoss: 2000, gainLossPercent: 10.53, percent: 4.33, dividendYield: 0, dividendType: 'reinvest', notes: 'Data operating systems for enterprise & defense' },
+  { id: 'h-schd', ticker: 'SCHD', name: 'Schwab US Dividend Equity ETF', type: 'Dividend ETF', value: 24000, units: 300, avgCost: 78, currentPrice: 80, gainLoss: 600, gainLossPercent: 2.56, percent: 4.95, dividendYield: 3.45, dividendType: 'reinvest', notes: 'High-quality dividend compounder' },
+  { id: 'h-jepq', ticker: 'JEPQ', name: 'JPMorgan Nasdaq Equity Premium Income', type: 'Dividend ETF', value: 21600, units: 400, avgCost: 52, currentPrice: 54, gainLoss: 800, gainLossPercent: 3.85, percent: 4.45, dividendYield: 9.12, dividendType: 'cash', notes: 'Options-overlay high monthly income provider' },
+  { id: 'h-abbv', ticker: 'ABBV', name: 'AbbVie Inc.', type: 'US Stock', value: 19800, units: 120, avgCost: 160, currentPrice: 165, gainLoss: 600, gainLossPercent: 3.12, percent: 4.08, dividendYield: 3.76, dividendType: 'cash', notes: 'Dividend Aristocrat immunotherapies giant' },
+  { id: 'h-rbrk', ticker: 'RBRK', name: 'Rubrik, Inc.', type: 'Sandbox Asset', value: 6000, units: 150, avgCost: 35, currentPrice: 40, gainLoss: 750, gainLossPercent: 14.28, percent: 1.24, dividendYield: 0, dividendType: 'reinvest', notes: 'Labs tactical AI cloud data security sandbox asset' },
+  { id: 'h-cash', ticker: 'CASH', name: 'US Dollar Cash Buffer', type: 'Cash', value: 8690, units: 8690, avgCost: 1, currentPrice: 1, gainLoss: 0, gainLossPercent: 0, percent: 1.79, notes: 'Dry powder capital buffer for future monthly DCA' }
 ];
 
 const INITIAL_DCA_PLAN: DcaPlan = {
@@ -151,7 +154,7 @@ const INITIAL_LABS_SUGGESTIONS: LabsSuggestion[] = [
   { id: 'ls-rbrk', title: 'High-Growth AI Cybersecurity', description: 'Evaluate experimental deployment of soft data security assets.', sandboxAsset: 'RBRK', tacticalIdea: 'Leverage sandbox sandbox weights for high-multiple momentum assets.', scenarioImpact: '+18% under tech rally, -12% under liquidity contraction', riskLevel: 'High' }
 ];
 
-export default function App() {
+function MainApp({ user }: { user: User | null }) {
   const [activeTab, setActiveTab] = useState<TabType>('portfolio');
   const [portfolioValue, setPortfolioValue] = useState<number>(485290.00);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -184,6 +187,67 @@ export default function App() {
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+
+  // Hydration Layer
+  useEffect(() => {
+    async function loadData() {
+      console.log(`[Aequitas OS] Triggering Hydration Sequence for user: ${user?.uid || 'anonymous/demo'}`);
+
+      // 1. Local Storage Migration First
+      const { state: migratedState } = migrateData(user?.uid);
+
+      let finalState: Partial<AppState> | null = migratedState;
+
+      // 2. Cloud Data Layer (overwrites local if present)
+      if (user?.uid) {
+        const cloudState = await fetchStateFromFirestore(user.uid);
+        if (cloudState) {
+          console.log("[Aequitas OS] Cloud data detected, merging with local state.");
+          finalState = { ...finalState, ...cloudState };
+        }
+      }
+
+      if (finalState) {
+        if (finalState.holdings) setHoldings(finalState.holdings);
+        if (finalState.portfolioValue) setPortfolioValue(finalState.portfolioValue);
+        if (finalState.dcaPlan) setDcaPlan(finalState.dcaPlan);
+        if (finalState.dividendPlan) setDividendPlan(finalState.dividendPlan);
+        if (finalState.activities) setActivities(finalState.activities);
+        if (finalState.thaiFundNavs) setThaiFundNavs(finalState.thaiFundNavs);
+        if (finalState.watchlist) setWatchlist(finalState.watchlist);
+        if (finalState.latestAiImportPlan) setLatestAiImportPlan(finalState.latestAiImportPlan);
+      }
+    }
+
+    loadData();
+  }, [user]);
+
+  // Persistence Layer
+  useEffect(() => {
+    // Prevent immediate save of initial state over cloud data during hydration
+    const timer = setTimeout(() => {
+      saveState({
+        holdings,
+        portfolioValue,
+        dcaPlan,
+        dividendPlan,
+        activities,
+        thaiFundNavs,
+        watchlist,
+        latestAiImportPlan
+      }, user?.uid);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, latestAiImportPlan, user]);
+
+  // Derived Targets from AI Import
+  const customTargets = useMemo(() => {
+    if (!latestAiImportPlan?.allocationPlan?.buckets) return undefined;
+    return latestAiImportPlan.allocationPlan.buckets.reduce((acc, b) => {
+      acc[b.name] = b.targetPercent;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [latestAiImportPlan]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -306,7 +370,7 @@ export default function App() {
           return {
             ...holding,
             notes: `${holding.notes ? holding.notes + ' | ' : ''}AI SUGGESTS: ${match.action} (${match.notes || ''})`,
-            targetAllocationPct: match.targetAllocationPct
+            targetPercent: match.targetPercent
           };
         }
         return holding;
@@ -394,8 +458,8 @@ export default function App() {
             <OverviewTab 
               portfolioValue={portfolioValue} 
               setActiveTab={setActiveTab}
-              healthScore={calculatePortfolioHealth(holdings)}
-              driftPct={calculatePortfolioDrift(holdings)}
+              healthScore={calculatePortfolioHealth(holdings, customTargets)}
+              driftPercent={calculatePortfolioDrift(holdings, customTargets)}
               dailyBrief={dailyBrief}
               dcaTarget={dcaPlan.monthlyContributionPlan}
               cashAvailable={dcaPlan.cashAvailable}
@@ -578,5 +642,13 @@ export default function App() {
       )}
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthGate>
+      {(user) => <MainApp user={user} />}
+    </AuthGate>
   );
 }

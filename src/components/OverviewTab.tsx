@@ -20,7 +20,7 @@ interface OverviewProps {
   portfolioValue: number;
   setActiveTab: (tab: TabType) => void;
   healthScore: number;
-  driftPct: number;
+  driftPercent: number;
   dailyBrief: DailyBrief;
   dcaTarget: number;
   cashAvailable: number;
@@ -32,7 +32,7 @@ export default function OverviewTab({
   portfolioValue,
   setActiveTab,
   healthScore,
-  driftPct,
+  driftPercent,
   dailyBrief,
   dcaTarget,
   cashAvailable,
@@ -247,7 +247,7 @@ export default function OverviewTab({
           <div className="mt-8 p-4 rounded-2xl bg-slate-100/50 dark:bg-slate-900/10 border border-slate-200/40 dark:border-slate-808/10 flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
               <Zap size={15} className="text-blue-600 dark:text-blue-450 shrink-0 animate-pulse" />
-              <p className="text-slate-500 dark:text-slate-400 font-medium">Combination drift rate is safely {driftPct ?? 0}% (Limit: 3.5%). Drift rebalancing resolved naturally via monthly DCA directions.</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Combination drift rate is safely {driftPercent ?? 0}% (Limit: 3.5%). Drift rebalancing resolved naturally via monthly DCA directions.</p>
             </div>
             <button 
               onClick={() => setActiveTab('dcaPlan')}

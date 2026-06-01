@@ -28,7 +28,7 @@ export default function AllocationTab({ onTriggerAlert, holdings, latestAiImport
     if (latestAiImportPlan?.allocationPlan?.buckets) {
       const safeBuckets = Array.isArray(latestAiImportPlan.allocationPlan.buckets) ? latestAiImportPlan.allocationPlan.buckets : [];
       const found = safeBuckets.find(b => b && b.name === layerName);
-      if (found && typeof found.targetPct === 'number') return found.targetPct;
+      if (found && typeof found.targetPercent === 'number') return found.targetPercent;
     }
     return defaultVal;
   };
