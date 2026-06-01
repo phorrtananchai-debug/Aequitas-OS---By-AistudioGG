@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { User } from 'firebase/auth';
 import { 
   AlertItem, 
   TabType, 
@@ -14,6 +15,7 @@ import {
   ThaiFundNavState,
   AiImportSchema
 } from './types';
+import { fetchStateFromFirestore, migrateData, saveState, AppState } from './core/storage';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import OverviewTab from './components/OverviewTab';
@@ -152,7 +154,7 @@ const INITIAL_LABS_SUGGESTIONS: LabsSuggestion[] = [
   { id: 'ls-rbrk', title: 'High-Growth AI Cybersecurity', description: 'Evaluate experimental deployment of soft data security assets.', sandboxAsset: 'RBRK', tacticalIdea: 'Leverage sandbox sandbox weights for high-multiple momentum assets.', scenarioImpact: '+18% under tech rally, -12% under liquidity contraction', riskLevel: 'High' }
 ];
 
-export default function App() {
+function MainApp({ user }: { user: User | null }) {
   const [activeTab, setActiveTab] = useState<TabType>('portfolio');
   const [portfolioValue, setPortfolioValue] = useState<number>(485290.00);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -185,6 +187,67 @@ export default function App() {
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [supportModalOpen, setSupportModalOpen] = useState(false);
+
+  // Hydration Layer
+  useEffect(() => {
+    async function loadData() {
+      console.log(`[Aequitas OS] Triggering Hydration Sequence for user: ${user?.uid || 'anonymous/demo'}`);
+
+      // 1. Local Storage Migration First
+      const { state: migratedState } = migrateData(user?.uid);
+
+      let finalState: Partial<AppState> | null = migratedState;
+
+      // 2. Cloud Data Layer (overwrites local if present)
+      if (user?.uid) {
+        const cloudState = await fetchStateFromFirestore(user.uid);
+        if (cloudState) {
+          console.log("[Aequitas OS] Cloud data detected, merging with local state.");
+          finalState = { ...finalState, ...cloudState };
+        }
+      }
+
+      if (finalState) {
+        if (finalState.holdings) setHoldings(finalState.holdings);
+        if (finalState.portfolioValue) setPortfolioValue(finalState.portfolioValue);
+        if (finalState.dcaPlan) setDcaPlan(finalState.dcaPlan);
+        if (finalState.dividendPlan) setDividendPlan(finalState.dividendPlan);
+        if (finalState.activities) setActivities(finalState.activities);
+        if (finalState.thaiFundNavs) setThaiFundNavs(finalState.thaiFundNavs);
+        if (finalState.watchlist) setWatchlist(finalState.watchlist);
+        if (finalState.latestAiImportPlan) setLatestAiImportPlan(finalState.latestAiImportPlan);
+      }
+    }
+
+    loadData();
+  }, [user]);
+
+  // Persistence Layer
+  useEffect(() => {
+    // Prevent immediate save of initial state over cloud data during hydration
+    const timer = setTimeout(() => {
+      saveState({
+        holdings,
+        portfolioValue,
+        dcaPlan,
+        dividendPlan,
+        activities,
+        thaiFundNavs,
+        watchlist,
+        latestAiImportPlan
+      }, user?.uid);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [holdings, portfolioValue, dcaPlan, dividendPlan, activities, thaiFundNavs, watchlist, latestAiImportPlan, user]);
+
+  // Derived Targets from AI Import
+  const customTargets = useMemo(() => {
+    if (!latestAiImportPlan?.allocationPlan?.buckets) return undefined;
+    return latestAiImportPlan.allocationPlan.buckets.reduce((acc, b) => {
+      acc[b.name] = b.targetPercent;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [latestAiImportPlan]);
 
   // Sync state derived from sum of holdings
   useEffect(() => {
@@ -362,8 +425,6 @@ export default function App() {
   };
 
   return (
-    <AuthGate onDemoMode={() => {}}>
-    {(user) => (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-[#F1F5F9] font-sans transition-colors duration-300 dot-grid">
       
       {/* 1. Left side Persistent Sidebar */}
@@ -397,8 +458,8 @@ export default function App() {
             <OverviewTab 
               portfolioValue={portfolioValue} 
               setActiveTab={setActiveTab}
-              healthScore={calculatePortfolioHealth(holdings)}
-              driftPercent={calculatePortfolioDrift(holdings)}
+              healthScore={calculatePortfolioHealth(holdings, customTargets)}
+              driftPercent={calculatePortfolioDrift(holdings, customTargets)}
               dailyBrief={dailyBrief}
               dcaTarget={dcaPlan.monthlyContributionPlan}
               cashAvailable={dcaPlan.cashAvailable}
@@ -581,7 +642,13 @@ export default function App() {
       )}
 
     </div>
-    )}
+  );
+}
+
+export default function App() {
+  return (
+    <AuthGate>
+      {(user) => <MainApp user={user} />}
     </AuthGate>
   );
 }

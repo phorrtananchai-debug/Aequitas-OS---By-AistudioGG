@@ -38,7 +38,7 @@ export const calculateLayerStats = (holdings: Holding[]) => {
   };
 };
 
-export const calculatePortfolioDrift = (holdings: Holding[]) => {
+export const calculatePortfolioDrift = (holdings: Holding[], customTargets?: Record<string, number>) => {
   const safeHoldings = Array.isArray(holdings) ? holdings : [];
   const totalValue = safeHoldings.reduce((acc, h) => acc + (h && Number.isFinite(h.value) ? h.value : 0), 0);
   if (!totalValue || totalValue <= 0) return 0;
@@ -46,17 +46,18 @@ export const calculatePortfolioDrift = (holdings: Holding[]) => {
   let totalWeightedDrift = 0;
 
   ASSET_LAYERS.forEach(layer => {
+    const target = customTargets?.[layer.name] ?? layer.target;
     const layerValue = getLayerValue(layer.name, safeHoldings);
     const currentPct = (layerValue / totalValue) * 100;
-    const drift = Math.abs(currentPct - layer.target);
-    totalWeightedDrift += drift * (layer.target / 100);
+    const drift = Math.abs(currentPct - target);
+    totalWeightedDrift += drift * (target / 100);
   });
 
   return Number.isFinite(totalWeightedDrift) ? parseFloat(totalWeightedDrift.toFixed(1)) : 0;
 };
 
-export const calculatePortfolioHealth = (holdings: Holding[]) => {
-  const drift = calculatePortfolioDrift(holdings);
+export const calculatePortfolioHealth = (holdings: Holding[], customTargets?: Record<string, number>) => {
+  const drift = calculatePortfolioDrift(holdings, customTargets);
   // Health starts at 100%, and drops as drift increases.
   const health = 100 - (drift * 2);
   return Math.max(0, Math.min(100, Number.isFinite(health) ? parseFloat(health.toFixed(1)) : 0));

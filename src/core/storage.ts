@@ -224,8 +224,17 @@ export const migrateData = (uid?: string) => {
 
     // 2. Map old data to new schema
     // Use the comprehensive list of keys provided in the task
+    const rawHoldings = oldData.aequitas_portfolio?.holdings || oldData.holdings || oldData.portfolio?.holdings || null;
+
+    // Normalize holdings fields (e.g., allocationPct -> percent)
+    const normalizedHoldings = Array.isArray(rawHoldings) ? rawHoldings.map((h: any) => ({
+      ...h,
+      percent: h.percent ?? h.allocationPct ?? h.weight ?? 0,
+      gainLossPercent: h.gainLossPercent ?? h.gainLossPct ?? 0,
+    })) : null;
+
     const newState: any = {
-      holdings: oldData.aequitas_portfolio?.holdings || oldData.holdings || oldData.portfolio?.holdings || null,
+      holdings: normalizedHoldings,
       portfolioValue: Number(oldData.aequitas_portfolio?.totalValue || oldData.portfolio?.totalValue || oldData.portfolioValue || 0) || null,
       dcaPlan: oldData.aequitas_dca_plan || oldData.dca || oldData.aequitas_dca || null,
       dividendPlan: oldData.aequitas_dividend_ledger || oldData.dividends || null,
